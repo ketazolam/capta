@@ -268,14 +268,14 @@ declare
   new_slug text;
 begin
   new_slug := lower(replace(split_part(new.email, '@', 1), '.', '-')) || '-' || substring(new.id::text, 1, 6);
-  insert into organizations (name, slug, owner_id)
+  insert into public.organizations (name, slug, owner_id)
     values (split_part(new.email, '@', 1), new_slug, new.id)
     returning id into new_org_id;
-  insert into org_members (org_id, user_id, role) values (new_org_id, new.id, 'admin');
-  insert into credits (org_id, balance) values (new_org_id, 0);
+  insert into public.org_members (org_id, user_id, role) values (new_org_id, new.id, 'admin');
+  insert into public.credits (org_id, balance) values (new_org_id, 0);
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
 create trigger on_auth_user_created
   after insert on auth.users
