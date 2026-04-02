@@ -3,7 +3,7 @@ create extension if not exists "uuid-ossp";
 
 -- Organizations (workspaces)
 create table organizations (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text unique not null,
   owner_id uuid references auth.users(id) on delete cascade,
@@ -12,7 +12,7 @@ create table organizations (
 
 -- Organization members
 create table org_members (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   org_id uuid references organizations(id) on delete cascade,
   user_id uuid references auth.users(id) on delete cascade,
   role text not null default 'viewer', -- admin | editor | viewer
@@ -22,7 +22,7 @@ create table org_members (
 
 -- Projects (one org can have many projects)
 create table projects (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   org_id uuid references organizations(id) on delete cascade,
   name text not null,
   created_at timestamptz default now()
@@ -30,7 +30,7 @@ create table projects (
 
 -- Pages (smart links)
 create table pages (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   project_id uuid references projects(id) on delete cascade,
   name text not null,
   slug text not null, -- e.g. "ganamosmedia"
@@ -49,7 +49,7 @@ create table pages (
 
 -- WhatsApp Lines
 create table lines (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   project_id uuid references projects(id) on delete cascade,
   name text not null default 'Nueva línea',
   phone_number text,
@@ -63,7 +63,7 @@ create table lines (
 
 -- Events / Analytics
 create table events (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   project_id uuid references projects(id) on delete cascade,
   page_id uuid references pages(id) on delete set null,
   line_id uuid references lines(id) on delete set null,
@@ -79,7 +79,7 @@ create table events (
 
 -- Contacts (CRM)
 create table contacts (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   project_id uuid references projects(id) on delete cascade,
   name text,
   phone text not null,
@@ -93,7 +93,7 @@ create table contacts (
 
 -- Sales (comprobantes procesados)
 create table sales (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   project_id uuid references projects(id) on delete cascade,
   contact_id uuid references contacts(id) on delete set null,
   line_id uuid references lines(id) on delete set null,
@@ -110,7 +110,7 @@ create table sales (
 
 -- Credits (billing)
 create table credits (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   org_id uuid references organizations(id) on delete cascade,
   balance integer default 0,
   updated_at timestamptz default now()
@@ -118,7 +118,7 @@ create table credits (
 
 -- Credit transactions
 create table credit_transactions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   org_id uuid references organizations(id) on delete cascade,
   amount integer not null, -- positive = add, negative = use
   description text,
@@ -128,7 +128,7 @@ create table credit_transactions (
 
 -- Notification subscriptions
 create table notification_subs (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   project_id uuid references projects(id) on delete cascade,
   event_type text not null, -- qr_ready | low_days_3 | low_days_1
   email text not null,
