@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
-import { Smartphone, Plus } from "lucide-react"
+import { Smartphone } from "lucide-react"
 import LineCard from "@/components/project/line-card"
+import AddLineDialog from "@/components/project/add-line-dialog"
 
 export default async function LineasPage({
   params,
@@ -23,7 +24,7 @@ export default async function LineasPage({
           <h2 className="text-xl font-bold text-white">Líneas WhatsApp</h2>
           <p className="text-zinc-500 text-sm mt-1">Cada línea = 1 número de WhatsApp conectado</p>
         </div>
-        <AddLineButton projectId={projectId} />
+        <AddLineDialog projectId={projectId} />
       </div>
 
       {!lines || lines.length === 0 ? (
@@ -40,20 +41,5 @@ export default async function LineasPage({
         </div>
       )}
     </div>
-  )
-}
-
-function AddLineButton({ projectId }: { projectId: string }) {
-  return (
-    <form action={`/api/lines/create`} method="POST">
-      <input type="hidden" name="projectId" value={projectId} />
-      <button
-        type="submit"
-        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-lg text-sm transition-colors"
-      >
-        <Plus className="w-4 h-4" />
-        Agregar línea
-      </button>
-    </form>
   )
 }
