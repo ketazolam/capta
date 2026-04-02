@@ -1,18 +1,24 @@
 import { createClient } from "@/lib/supabase/server"
+import MetaConnectSection from "@/components/project/meta-connect-section"
 
 export default async function SettingsGeneralPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectId: string }>
+  searchParams: Promise<{ meta_connected?: string; meta_error?: string; meta_select?: string; pixels?: string; pixel?: string }>
 }) {
   const { projectId } = await params
+  const sp = await searchParams
   const supabase = await createClient()
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, name, org_id")
+    .select("id, name, org_id, meta_pixel_id, meta_access_token")
     .eq("id", projectId)
     .single()
+
+  const pixels = sp.pixels ? JSON.parse(decodeURIComponent(sp.pixels)) : null
 
   return (
     <div className="p-8 max-w-2xl">
@@ -50,6 +56,17 @@ export default async function SettingsGeneralPage({
             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
           />
         </div>
+
+        {/* Meta Connect */}
+        <MetaConnectSection
+          projectId={projectId}
+          pixelId={project?.meta_pixel_id ?? null}
+          hasToken={!!project?.meta_access_token}
+          pendingPixels={pixels}
+          justConnected={sp.meta_connected === "1"}
+          connectedPixelId={sp.pixel ?? null}
+          error={sp.meta_error ?? null}
+        />
 
         {/* Atribución */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-5">
