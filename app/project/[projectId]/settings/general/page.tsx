@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import MetaConnectSection from "@/components/project/meta-connect-section"
+import SettingsNameForm from "@/components/project/settings-name-form"
 
 export default async function SettingsGeneralPage({
   params,
@@ -12,11 +13,25 @@ export default async function SettingsGeneralPage({
   const sp = await searchParams
   const supabase = await createClient()
 
-  const { data: project } = await supabase
+  // Try to select meta columns — they may not exist yet if migration hasn't run
+  let project: { id: string; name: string; org_id: string; meta_pixel_id?: string | null; meta_access_token?: string | null } | null = null
+  const { data: projectData, error: projectError } = await supabase
     .from("projects")
     .select("id, name, org_id, meta_pixel_id, meta_access_token")
     .eq("id", projectId)
     .single()
+
+  if (projectError && projectError.code === "42703") {
+    // Column doesn't exist yet — fall back to basic select
+    const { data: fallback } = await supabase
+      .from("projects")
+      .select("id, name, org_id")
+      .eq("id", projectId)
+      .single()
+    project = fallback ? { ...fallback, meta_pixel_id: null, meta_access_token: null } : null
+  } else {
+    project = projectData
+  }
 
   const pixels = sp.pixels ? JSON.parse(decodeURIComponent(sp.pixels)) : null
 
@@ -48,14 +63,7 @@ export default async function SettingsGeneralPage({
         </div>
 
         {/* Nombre */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
-          <h3 className="font-semibold text-white">Nombre del proyecto</h3>
-          <input
-            type="text"
-            defaultValue={project?.name}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
-          />
-        </div>
+        <SettingsNameForm projectId={projectId} initialName={project?.name ?? ""} />
 
         {/* Meta Connect */}
         <MetaConnectSection

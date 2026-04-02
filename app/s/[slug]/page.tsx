@@ -36,13 +36,16 @@ export default async function SmartLinkPage({
 
   const supabase = await createServiceClient()
 
-  // Find the page by slug (across all projects)
-  const { data: page } = await supabase
+  // Find the page by slug (across all projects) — use limit(1) instead of single()
+  // to avoid error when multiple pages share a slug across different projects
+  const { data: pages } = await supabase
     .from("pages")
     .select("*, projects(id, org_id)")
     .eq("slug", slug)
     .eq("is_published", true)
-    .single()
+    .limit(1)
+
+  const page = pages?.[0] ?? null
 
   if (!page) notFound()
 
@@ -77,12 +80,27 @@ export default async function SmartLinkPage({
     )
   }
 
+  // Resolve pixel config: page-level first, then project-level
+  let pixelId = page.meta_pixel_id
+  let accessToken = page.meta_access_token
+  if (!pixelId || !accessToken) {
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("meta_pixel_id, meta_access_token")
+      .eq("id", page.project_id)
+      .single()
+    if (proj?.meta_pixel_id && proj?.meta_access_token) {
+      pixelId = proj.meta_pixel_id
+      accessToken = proj.meta_access_token
+    }
+  }
+
   // Track PageView
   const sessionId = nanoid()
-  if (page.meta_pixel_id && page.meta_access_token) {
+  if (pixelId && accessToken) {
     await sendMetaEvent({
-      pixelId: page.meta_pixel_id,
-      accessToken: page.meta_access_token,
+      pixelId,
+      accessToken,
       eventName: "PageView",
       eventId: nanoid(),
       userData: { client_ip_address: ip, client_user_agent: userAgent },
@@ -120,12 +138,9 @@ export default async function SmartLinkPage({
 
 function BotContent({ pageName }: { pageName: string }) {
   return (
-    <html lang="es">
-      <body style={{ fontFamily: "sans-serif", padding: "40px", color: "#333" }}>
-        <h1>Bienvenido</h1>
-        <p>Página de atención al cliente. Contactanos para más información.</p>
-        <meta name="robots" content="noindex" />
-      </body>
-    </html>
+    <div style={{ fontFamily: "sans-serif", padding: "40px", color: "#999", background: "#0a0a0a", minHeight: "100vh" }}>
+      <h1 style={{ color: "#fff" }}>Bienvenido</h1>
+      <p>Página de atención al cliente — {pageName}. Contactanos para más información.</p>
+    </div>
   )
 }

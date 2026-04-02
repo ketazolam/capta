@@ -25,14 +25,38 @@ export async function POST(req: NextRequest) {
       ref_code,
     })
 
-    // Get page pixel config
-    const { data: page } = await supabase
-      .from("pages")
-      .select("meta_pixel_id, meta_access_token")
-      .eq("id", page_id)
-      .single()
+    // Get pixel config — try page-level first, then project-level
+    let pixelId: string | null = null
+    let accessToken: string | null = null
 
-    if (page?.meta_pixel_id && page?.meta_access_token) {
+    if (page_id) {
+      const { data: page } = await supabase
+        .from("pages")
+        .select("meta_pixel_id, meta_access_token")
+        .eq("id", page_id)
+        .single()
+      pixelId = page?.meta_pixel_id ?? null
+      accessToken = page?.meta_access_token ?? null
+    }
+
+    // Fall back to project-level config (columns may not exist yet)
+    if ((!pixelId || !accessToken) && project_id) {
+      try {
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("meta_pixel_id, meta_access_token")
+          .eq("id", project_id)
+          .single()
+        if (proj?.meta_pixel_id && proj?.meta_access_token) {
+          pixelId = proj.meta_pixel_id
+          accessToken = proj.meta_access_token
+        }
+      } catch {
+        // columns may not exist yet — ignore
+      }
+    }
+
+    if (pixelId && accessToken) {
       const metaEventMap: Record<string, string> = {
         page_view: "PageView",
         button_click: "Lead",
@@ -43,8 +67,8 @@ export async function POST(req: NextRequest) {
       const metaEventName = metaEventMap[event_type]
       if (metaEventName) {
         await sendMetaEvent({
-          pixelId: page.meta_pixel_id,
-          accessToken: page.meta_access_token,
+          pixelId: pixelId!,
+          accessToken: accessToken!,
           eventName: metaEventName,
           eventId: nanoid(),
           userData: {
