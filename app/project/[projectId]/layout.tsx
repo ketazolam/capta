@@ -1,0 +1,43 @@
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import ProjectSidebar from "@/components/layout/project-sidebar"
+
+export default async function ProjectLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ projectId: string }>
+}) {
+  const { projectId } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id, name, org_id")
+    .eq("id", projectId)
+    .single()
+
+  if (!project) redirect("/dashboard")
+
+  const { data: creditsRow } = await supabase
+    .from("credits")
+    .select("balance")
+    .eq("org_id", project.org_id)
+    .single()
+
+  return (
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
+      <ProjectSidebar
+        projectId={projectId}
+        projectName={project.name}
+        credits={creditsRow?.balance ?? 0}
+      />
+      <main className="flex-1 overflow-y-auto">
+        {children}
+      </main>
+    </div>
+  )
+}
