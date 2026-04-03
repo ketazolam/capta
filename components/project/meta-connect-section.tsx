@@ -26,6 +26,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   token_failed: "No se pudo obtener el token de Meta. Intentá de nuevo.",
   no_pixels: "No encontramos pixels en tu cuenta. Verificá que tenés una cuenta publicitaria activa.",
   invalid_state: "Error de estado. Intentá de nuevo.",
+  unauthorized: "Tu sesión no coincide con la que inició la conexión. Cerrá sesión y volvé a intentar.",
 }
 
 export default function MetaConnectSection({
