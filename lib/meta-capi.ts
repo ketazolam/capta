@@ -19,12 +19,16 @@ interface MetaEventParams {
     [key: string]: unknown
   }
   sourceUrl?: string
+  testEventCode?: string
 }
 
 export async function sendMetaEvent(params: MetaEventParams) {
-  const { pixelId, accessToken, eventName, eventId, userData, customData, sourceUrl } = params
+  const { pixelId, accessToken, eventName, eventId, userData, customData, sourceUrl, testEventCode } = params
 
-  const payload = {
+  // test_event_code: use explicit param, or fall back to env var (for dev/staging testing)
+  const resolvedTestCode = testEventCode || process.env.META_TEST_EVENT_CODE || undefined
+
+  const payload: Record<string, unknown> = {
     data: [
       {
         event_name: eventName,
@@ -45,6 +49,7 @@ export async function sendMetaEvent(params: MetaEventParams) {
       },
     ],
   }
+  if (resolvedTestCode) payload.test_event_code = resolvedTestCode
 
   try {
     const res = await fetch(

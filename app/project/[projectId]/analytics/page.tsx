@@ -200,15 +200,13 @@ export default async function AnalyticsPage({
         </div>
       ) : (
         <div className="space-y-6">
-          {totalRevenue > 0 && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-              <p className="text-zinc-500 text-sm mb-1">Facturación confirmada</p>
-              <p className="text-3xl font-bold text-emerald-400">
-                ${totalRevenue.toLocaleString("es-AR")}
-              </p>
-              <p className="text-xs text-zinc-600 mt-1">{sales?.length} ventas confirmadas</p>
-            </div>
-          )}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <p className="text-zinc-500 text-sm mb-1">Facturación confirmada</p>
+            <p className="text-3xl font-bold text-emerald-400">
+              ${totalRevenue.toLocaleString("es-AR")}
+            </p>
+            <p className="text-xs text-zinc-600 mt-1">{sales?.length ?? 0} ventas confirmadas</p>
+          </div>
 
           <div className="grid grid-cols-3 gap-4">
             {funnel.map((item) => {
