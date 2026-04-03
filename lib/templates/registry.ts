@@ -1,12 +1,11 @@
 import type { TemplateDefinition } from "./types"
 import { WhatsAppRedirectDefinition } from "./components/whatsapp-redirect"
+import { PalaceCasinoDefinition } from "./components/palace-casino"
 
 // Registry de templates — agregar nuevos templates acá
 const templateList: TemplateDefinition[] = [
   WhatsAppRedirectDefinition,
-  // TODO: Agregar templates custom acá
-  // CasinoPromoDefinition,
-  // LeadCaptureDefinition,
+  PalaceCasinoDefinition,
 ]
 
 const templateMap: Record<string, TemplateDefinition> = Object.fromEntries(
