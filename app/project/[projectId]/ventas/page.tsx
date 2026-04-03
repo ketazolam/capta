@@ -151,21 +151,23 @@ export default async function VentasPage({
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Referencia</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Comprobante</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Fecha</th>
+                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Motivo</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Acción</th>
                 </tr>
               </thead>
               <tbody>
                 {sales.map((sale) => {
                   const contact = sale.contacts as { name?: string; phone?: string } | null
+                  const isRejected = sale.status === "rejected"
                   return (
-                    <tr key={sale.id} className="border-b border-zinc-800/50 hover:bg-zinc-900/20 align-top">
-                      <td className="px-4 py-3 text-white">
+                    <tr key={sale.id} className={`border-b border-zinc-800/50 hover:bg-zinc-900/20 align-top ${isRejected ? "opacity-60" : ""}`}>
+                      <td className={`px-4 py-3 ${isRejected ? "line-through text-zinc-500" : "text-white"}`}>
                         <div>{contact?.name || sale.phone || "—"}</div>
                         {contact?.name && sale.phone && (
                           <div className="text-zinc-500 text-xs">{sale.phone}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-emerald-400 font-medium">
+                      <td className={`px-4 py-3 font-medium ${isRejected ? "line-through text-red-400/60" : "text-emerald-400"}`}>
                         {sale.amount ? `$${Number(sale.amount).toLocaleString("es-AR")}` : "—"}
                       </td>
                       <td className="px-4 py-3 text-zinc-400 text-xs max-w-[120px] truncate">
@@ -184,6 +186,9 @@ export default async function VentasPage({
                       </td>
                       <td className="px-4 py-3 text-zinc-500 text-xs">
                         {new Date(sale.created_at).toLocaleDateString("es-AR")}
+                      </td>
+                      <td className="px-4 py-3 text-red-400/80 text-xs max-w-[140px] truncate">
+                        {(sale as Record<string, unknown>).reject_reason as string || "—"}
                       </td>
                       <td className="px-4 py-3">
                         <SaleActions

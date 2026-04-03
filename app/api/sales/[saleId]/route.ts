@@ -10,7 +10,7 @@ export async function PATCH(
   try {
     const { saleId } = await params
     const body = await req.json()
-    const { status, amount, reference, phone, project_id } = body
+    const { status, amount, reference, phone, project_id, reject_reason } = body
 
     if (!["confirmed", "rejected"].includes(status)) {
       return NextResponse.json({ error: "status must be confirmed or rejected" }, { status: 400 })
@@ -37,6 +37,7 @@ export async function PATCH(
     const updateData: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
     if (amount !== undefined) updateData.amount = amount
     if (reference !== undefined) updateData.reference = reference
+    if (status === "rejected" && reject_reason) updateData.reject_reason = reject_reason
 
     const { error: updateErr } = await supabase
       .from("sales")

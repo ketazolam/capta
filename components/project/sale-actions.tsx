@@ -30,6 +30,9 @@ export default function SaleActions({ saleId, projectId, phone, amount, imageUrl
   const [showImageModal, setShowImageModal] = useState(false)
   const [manualImageUrl, setManualImageUrl] = useState(imageUrl || "")
   const [analyzeError, setAnalyzeError] = useState("")
+  const [showReject, setShowReject] = useState(false)
+  const [rejectReason, setRejectReason] = useState("")
+  const [reverting, setReverting] = useState(false)
 
   const handleStatus = async (newStatus: "confirmed" | "rejected") => {
     setLoading(newStatus === "confirmed" ? "confirm" : "reject")
@@ -80,15 +83,75 @@ export default function SaleActions({ saleId, projectId, phone, amount, imageUrl
     }
   }
 
+  const handleRevert = async () => {
+    if (!rejectReason.trim()) return
+    setReverting(true)
+    try {
+      const res = await fetch(`/api/sales/${saleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "rejected",
+          project_id: projectId,
+          phone,
+          reject_reason: rejectReason.trim(),
+        }),
+      })
+      if (!res.ok) throw new Error("Error al revertir")
+      router.refresh()
+    } catch {
+      toast.error("Error al revertir la venta")
+    } finally {
+      setReverting(false)
+    }
+  }
+
   if (status !== "pending") {
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-        status === "confirmed"
-          ? "bg-emerald-500/15 text-emerald-400"
-          : "bg-red-500/15 text-red-400"
-      }`}>
-        {status === "confirmed" ? "Confirmada" : "Rechazada"}
-      </span>
+      <div className="flex flex-col gap-1.5">
+        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+          status === "confirmed"
+            ? "bg-emerald-500/15 text-emerald-400"
+            : "bg-red-500/15 text-red-400"
+        }`}>
+          {status === "confirmed" ? "Confirmada" : "Rechazada"}
+        </span>
+        {status === "confirmed" && !showReject && (
+          <button
+            onClick={() => setShowReject(true)}
+            className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+          >
+            Revertir
+          </button>
+        )}
+        {showReject && (
+          <div className="flex flex-col gap-1.5">
+            <input
+              type="text"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Razón de rechazo..."
+              className="w-40 px-2 py-1 text-xs bg-zinc-900 border border-zinc-700 rounded text-white focus:outline-none focus:border-red-500"
+            />
+            <div className="flex gap-1">
+              <button
+                onClick={handleRevert}
+                disabled={reverting || !rejectReason.trim()}
+                className="flex items-center gap-1 px-2 py-0.5 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded border border-red-500/20 transition-colors disabled:opacity-50"
+              >
+                {reverting ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                Confirmar
+              </button>
+              <button
+                onClick={() => { setShowReject(false); setRejectReason("") }}
+                className="px-2 py-0.5 text-xs text-zinc-500 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     )
   }
 
