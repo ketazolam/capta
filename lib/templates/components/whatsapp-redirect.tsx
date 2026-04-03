@@ -70,7 +70,7 @@ function WhatsAppRedirectInner({
   )
 }
 
-function WhatsAppRedirectTemplate(props: TemplateProps) {
+export function WhatsAppRedirectTemplate(props: TemplateProps) {
   return (
     <TrackingProvider
       pageId={props.pageId}

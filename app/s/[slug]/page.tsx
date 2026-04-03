@@ -3,7 +3,17 @@ import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { nanoid } from "nanoid"
-import { getTemplate } from "@/lib/templates/registry"
+import type { TemplateProps } from "@/lib/templates/types"
+import type { ComponentType } from "react"
+
+// Direct imports of template components — server components can render client components,
+// but cannot use getTemplate() from a registry that imports "use client" modules.
+// Add new templates here as they're created.
+import { WhatsAppRedirectTemplate } from "@/lib/templates/components/whatsapp-redirect"
+
+const TEMPLATE_COMPONENTS: Record<string, ComponentType<TemplateProps>> = {
+  "whatsapp-redirect": WhatsAppRedirectTemplate,
+}
 
 // Crawler/bot user agents — skip tracking for these
 const BOT_AGENTS = [
@@ -150,8 +160,7 @@ export default async function SmartLinkPage({
   const waPhone = targetLine?.phone_number?.replace(/\D/g, "") || null
 
   const templateId = (page.template_id as string | null) ?? "whatsapp-redirect"
-  const template = getTemplate(templateId) ?? getTemplate("whatsapp-redirect")!
-  const TemplateComponent = template.component
+  const TemplateComponent = TEMPLATE_COMPONENTS[templateId] ?? TEMPLATE_COMPONENTS["whatsapp-redirect"]
 
   return (
     <TemplateComponent
