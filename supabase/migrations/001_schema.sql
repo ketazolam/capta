@@ -149,6 +149,13 @@ alter table credits enable row level security;
 alter table credit_transactions enable row level security;
 alter table notification_subs enable row level security;
 
+-- Org members can read/manage their own membership rows
+create policy "members can view own membership" on org_members
+  for select using (user_id = auth.uid());
+
+create policy "members manage own membership" on org_members
+  for all using (user_id = auth.uid());
+
 -- Users can see orgs they belong to
 create policy "org members can view" on organizations
   for select using (
@@ -258,6 +265,11 @@ create policy "sales insert public" on sales
 create policy "credits view" on credits
   for select using (
     org_id in (select org_id from org_members where user_id = auth.uid())
+  );
+
+create policy "org admins manage credits" on credits
+  for all using (
+    org_id in (select org_id from org_members where user_id = auth.uid() and role = 'admin')
   );
 
 -- Function: auto-create org + credits on signup
