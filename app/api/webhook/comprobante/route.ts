@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { analyzeComprobante } from "@/lib/comprobante"
 import { isRateLimited } from "@/lib/rate-limit"
+import { notifyAdmin } from "@/lib/notify-admin"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
@@ -103,6 +104,24 @@ export async function POST(req: NextRequest) {
   }
 
   const saleId = sale.id
+
+  // Notify admin via WhatsApp if configured
+  if (line_id) {
+    const { data: projectForNotif } = await supabase
+      .from("projects")
+      .select("notification_phone")
+      .eq("id", project_id)
+      .single()
+    if (projectForNotif?.notification_phone) {
+      const amount = extracted.amount ? `$${extracted.amount.toLocaleString("es-AR")}` : "monto no detectado"
+      const confidence = extracted.confidence === "high" ? "\u2705" : extracted.confidence === "medium" ? "\u26A0\uFE0F" : "\u2753"
+      await notifyAdmin({
+        lineId: line_id,
+        notificationPhone: projectForNotif.notification_phone,
+        message: `${confidence} Nuevo comprobante de ${phone || "desconocido"}\nMonto: ${amount}\nConfianza: ${extracted.confidence}\nVer en Capta: ${process.env.NEXT_PUBLIC_APP_URL}/project/${project_id}/ventas`,
+      })
+    }
+  }
 
   // 3. Auto-confirm if confidence is high AND amount is valid
   const shouldConfirm = auto_confirm && extracted.confidence === "high" && extracted.amount && extracted.amount > 0

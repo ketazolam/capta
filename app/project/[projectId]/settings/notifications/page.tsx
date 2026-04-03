@@ -1,5 +1,6 @@
 import SettingsTabs from "@/components/project/settings-tabs"
-import { Bell } from "lucide-react"
+import NotificationSettingsForm from "@/components/project/notification-settings-form"
+import { createClient } from "@/lib/supabase/server"
 
 export default async function SettingsNotificationsPage({
   params,
@@ -7,17 +8,23 @@ export default async function SettingsNotificationsPage({
   params: Promise<{ projectId: string }>
 }) {
   const { projectId } = await params
+  const supabase = await createClient()
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("notification_phone")
+    .eq("id", projectId)
+    .single()
 
   return (
     <div className="p-8 max-w-2xl">
       <h2 className="text-xl font-bold text-white mb-8">Configuración</h2>
       <div className="space-y-6">
         <SettingsTabs projectId={projectId} active="notifications" />
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
-          <Bell className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-          <h3 className="text-zinc-300 font-medium">Notificaciones</h3>
-          <p className="text-zinc-600 text-sm mt-1">Próximamente podés configurar alertas por email para QR, días restantes y más</p>
-        </div>
+        <NotificationSettingsForm
+          projectId={projectId}
+          initialPhone={project?.notification_phone || ""}
+        />
       </div>
     </div>
   )

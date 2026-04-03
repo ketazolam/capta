@@ -10,7 +10,7 @@ export async function PATCH(
   const supabase = await createClient()
 
   // Only allow updating specific fields
-  const allowed = ["name", "meta_pixel_id", "meta_access_token", "attribution_config"]
+  const allowed = ["name", "meta_pixel_id", "meta_access_token", "attribution_config", "notification_phone"]
   const updates: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) updates[key] = body[key]

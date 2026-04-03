@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Users } from "lucide-react"
 import Link from "next/link"
 import Pagination from "@/components/ui/pagination"
+import ExportCsvButton from "@/components/ui/export-csv-button"
 
 const PAGE_SIZE = 25
 
@@ -52,7 +53,12 @@ export default async function ContactosPage({
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">Contactos</h2>
-        <span className="text-zinc-500 text-sm">{count ?? 0} contactos</span>
+        <div className="flex items-center gap-3">
+          <ExportCsvButton
+            href={`/api/projects/${projectId}/export/contactos`}
+          />
+          <span className="text-zinc-500 text-sm">{count ?? 0} contactos</span>
+        </div>
       </div>
 
       {/* Filters */}
