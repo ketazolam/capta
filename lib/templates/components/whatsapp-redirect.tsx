@@ -79,6 +79,8 @@ function WhatsAppRedirectTemplate(props: TemplateProps) {
       lineId={props.lineId}
       waPhone={props.waPhone}
       waMessage={props.waMessage}
+      fbp={props.fbp}
+      fbc={props.fbc}
     >
       <WhatsAppRedirectInner autoRedirect={props.autoRedirect} config={props.config} />
     </TrackingProvider>

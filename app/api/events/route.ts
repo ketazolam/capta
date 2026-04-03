@@ -6,7 +6,7 @@ import { nanoid } from "nanoid"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { event_type, project_id, page_id, line_id, session_id, phone, ref_code } = body
+    const { event_type, project_id, page_id, line_id, session_id, phone, ref_code, fbp, fbc, source_url } = body
 
     const supabase = await createServiceClient()
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || ""
@@ -88,8 +88,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (pixelId && accessToken && metaEnabled) {
+      // page_view is fired server-side in /s/[slug]/page.tsx — skip here to avoid duplicates
       const metaEventMap: Record<string, string> = {
-        page_view: "PageView",
         button_click: "Lead",
         conversation_start: "InitiateCheckout",
         purchase: "Purchase",
@@ -101,13 +101,16 @@ export async function POST(req: NextRequest) {
           pixelId,
           accessToken,
           eventName: metaEventName,
-          eventId: nanoid(),
+          eventId: `${event_type}_${session_id}`,
           userData: {
             phone,
             client_ip_address: ip,
             client_user_agent: userAgent,
+            fbp: fbp || undefined,
+            fbc: fbc || undefined,
+            external_id: session_id || undefined,
           },
-          sourceUrl: req.headers.get("referer") || undefined,
+          sourceUrl: source_url || req.headers.get("referer") || undefined,
         })
       }
     }

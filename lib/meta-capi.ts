@@ -10,6 +10,7 @@ interface MetaEventParams {
     client_user_agent?: string
     fbp?: string
     fbc?: string
+    external_id?: string
   }
   customData?: {
     value?: number
@@ -38,6 +39,7 @@ export async function sendMetaEvent(params: MetaEventParams) {
           ph: userData?.phone ? [await hashSHA256(normalizePhone(userData.phone))] : undefined,
           fbp: userData?.fbp,
           fbc: userData?.fbc,
+          external_id: userData?.external_id ? [await hashSHA256(userData.external_id)] : undefined,
         },
         custom_data: customData,
       },
@@ -46,10 +48,13 @@ export async function sendMetaEvent(params: MetaEventParams) {
 
   try {
     const res = await fetch(
-      `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`,
+      `https://graph.facebook.com/v21.0/${pixelId}/events`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
         body: JSON.stringify(payload),
       }
     )

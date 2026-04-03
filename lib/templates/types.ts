@@ -9,6 +9,9 @@ export interface TemplateProps {
   lineId: string | null
   autoRedirect: boolean
   config: Record<string, unknown>
+  // Meta tracking params for client-side events (EMQ)
+  fbp?: string
+  fbc?: string
 }
 
 export interface ConfigField {

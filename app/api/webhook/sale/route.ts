@@ -1,7 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { NextResponse } from "next/server"
-import { nanoid } from "nanoid"
 
 export async function POST(req: Request) {
   // Verify internal secret
@@ -10,7 +9,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { saleId, lineId, projectId, amount, phone } = await req.json()
+  const { saleId, projectId, amount, phone } = await req.json()
 
   if (!saleId || !projectId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
@@ -73,13 +72,20 @@ export async function POST(req: Request) {
   }
 
   // Send Purchase event to Meta CAPI
-  const eventId = `purchase_${nanoid()}`
+  const ip = (req as Request & { headers: Headers }).headers.get("x-forwarded-for")?.split(",")[0] || ""
+  const userAgent = (req as Request & { headers: Headers }).headers.get("user-agent") || ""
+  const eventId = `purchase_${saleId}`
   await sendMetaEvent({
     pixelId: metaPixelId,
     accessToken: metaAccessToken,
     eventName: "Purchase",
     eventId,
-    userData: { phone },
+    userData: {
+      phone,
+      client_ip_address: ip || undefined,
+      client_user_agent: userAgent || undefined,
+      external_id: saleId,
+    },
     customData: {
       value: amount ?? 0,
       currency: "ARS",

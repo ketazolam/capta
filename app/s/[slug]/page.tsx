@@ -25,13 +25,20 @@ export default async function SmartLinkPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ ref?: string; utm_source?: string; utm_campaign?: string }>
+  searchParams: Promise<{ ref?: string; utm_source?: string; utm_campaign?: string; fbclid?: string }>
 }) {
   const { slug } = await params
   const sp = await searchParams
   const headersList = await headers()
   const userAgent = headersList.get("user-agent") || ""
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] || ""
+
+  // Extract Meta tracking cookies from Cookie header (server-side)
+  const cookieHeader = headersList.get("cookie") || ""
+  const fbp = cookieHeader.match(/(?:^|;\s*)_fbp=([^;]+)/)?.[1] ?? undefined
+  // fbc: prefer cookie, fall back to building from fbclid if present
+  const fbcCookie = cookieHeader.match(/(?:^|;\s*)_fbc=([^;]+)/)?.[1]
+  const fbc = fbcCookie ?? (sp.fbclid ? `fb.1.${Date.now()}.${sp.fbclid}` : undefined)
 
   const supabase = await createServiceClient()
 
@@ -106,15 +113,21 @@ export default async function SmartLinkPage({
     }
   }
 
-  // Track PageView
+  // Track PageView — sessionId doubles as external_id for cross-event linking
   const sessionId = nanoid()
   if (pixelId && accessToken && pageViewEnabled) {
     await sendMetaEvent({
       pixelId,
       accessToken,
       eventName: "PageView",
-      eventId: nanoid(),
-      userData: { client_ip_address: ip, client_user_agent: userAgent },
+      eventId: `pv_${sessionId}`,
+      userData: {
+        client_ip_address: ip,
+        client_user_agent: userAgent,
+        fbp,
+        fbc,
+        external_id: sessionId,
+      },
       sourceUrl: `${process.env.NEXT_PUBLIC_APP_URL}/s/${slug}`,
     })
   }
@@ -150,6 +163,8 @@ export default async function SmartLinkPage({
       autoRedirect={page.auto_redirect}
       lineId={targetLine?.id || null}
       config={(page.template_config as Record<string, unknown>) ?? {}}
+      fbp={fbp}
+      fbc={fbc}
     />
   )
 }

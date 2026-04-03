@@ -9,6 +9,8 @@ interface TrackingContextValue {
   lineId: string | null
   waPhone: string | null
   waMessage: string
+  fbp?: string
+  fbc?: string
 }
 
 const TrackingContext = createContext<TrackingContextValue | null>(null)
@@ -30,6 +32,8 @@ export function useTracking() {
     ? `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`
     : null
 
+  const { fbp, fbc } = ctx
+
   const trackEvent = useCallback(
     async (eventType: string, extra?: Record<string, unknown>) => {
       try {
@@ -42,6 +46,9 @@ export function useTracking() {
             line_id: lineId,
             event_type: eventType,
             session_id: sessionId,
+            fbp,
+            fbc,
+            source_url: window.location.href,
             ...extra,
           }),
         })
@@ -49,7 +56,7 @@ export function useTracking() {
         console.error("[tracking] event error:", err)
       }
     },
-    [projectId, pageId, lineId, sessionId]
+    [projectId, pageId, lineId, sessionId, fbp, fbc]
   )
 
   const redirectToWhatsApp = useCallback(async () => {
