@@ -10,17 +10,17 @@
    (Capta admin uses zinc-*, so no conflict).
    ============================================ */
 @theme {
-  --color-primary-950: #0f2210;
-  --color-primary-900: #18361a;
-  --color-primary-800: #235025;
-  --color-primary-700: #357437;
-  --color-primary-600: #4d9b46;
-  --color-primary-500: #6eb751;
-  --color-primary-400: #8ecb6f;
-  --color-primary-300: #aee19a;
-  --color-primary-200: #cdefbd;
-  --color-primary-100: #e6f8df;
-  --color-primary-50:  #f3fcee;
+  --color-primary-950: #0d0520;
+  --color-primary-900: #1a0a3d;
+  --color-primary-800: #2d1567;
+  --color-primary-700: #4021a0;
+  --color-primary-600: #5b2fc6;
+  --color-primary-500: #7a4fd6;
+  --color-primary-400: #9d78e4;
+  --color-primary-300: #bfa5ef;
+  --color-primary-200: #daccf6;
+  --color-primary-100: #ede5fc;
+  --color-primary-50:  #f5f0fe;
 
   --color-gold-700: #946d08;
   --color-gold-600: #b8860b;
@@ -44,7 +44,7 @@
 /* Custom component classes for Palace Casino template */
 @layer components {
   .palace-casino .gradient-primary {
-    background: linear-gradient(135deg, #18361a 0%, #235025 50%, #18361a 100%);
+    background: linear-gradient(135deg, #1a0a3d 0%, #2d1567 50%, #1a0a3d 100%);
   }
   .palace-casino .btn-whatsapp {
     display: inline-flex;

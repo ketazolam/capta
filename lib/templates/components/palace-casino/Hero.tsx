@@ -1,14 +1,12 @@
 "use client"
 
 import { ArrowRight, Clock, Banknote } from "lucide-react"
-import { usePalaceConfig } from "./_context"
 import { useTracking } from "@/lib/templates/tracking-context"
 import Logo from "./Logo"
 import PlayersOnline from "./PlayersOnline"
 import ViewersCount from "./ViewersCount"
 
 export default function Hero() {
-  const { whatsappUrl } = usePalaceConfig()
   const { redirectToWhatsApp } = useTracking()
 
   const handleCTAClick = () => {
@@ -45,8 +43,7 @@ export default function Hero() {
 
           <button
             onClick={handleCTAClick}
-            disabled={!whatsappUrl}
-            className="btn-whatsapp w-full max-w-md mx-auto text-[1.4rem] sm:text-2xl px-8 sm:px-16 py-5 sm:py-7 min-h-[66px] sm:min-h-[76px] mb-2 sm:mb-10 group animate-pulse-slow disabled:opacity-50"
+            className="btn-whatsapp w-full max-w-md mx-auto text-[1.4rem] sm:text-2xl px-8 sm:px-16 py-5 sm:py-7 min-h-[66px] sm:min-h-[76px] mb-2 sm:mb-10 group animate-pulse-slow"
             aria-label="Contactar por WhatsApp"
           >
             <svg viewBox="0 0 24 24" className="w-7 h-7 sm:w-9 sm:h-9 fill-current flex-shrink-0" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

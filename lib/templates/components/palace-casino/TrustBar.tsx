@@ -3,7 +3,7 @@ import { Award, Shield, Headphones, CreditCard } from "lucide-react";
 const trustItems = [
   {
     icon: Award,
-    title: "+5 Años",
+    title: "+55 Años",
     subtitle: "de Experiencia",
   },
   {

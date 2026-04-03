@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { usePalaceConfig } from "./_context"
 
 interface LogoProps {
@@ -8,26 +7,20 @@ interface LogoProps {
   className?: string
 }
 
-const sizes = {
-  sm: { width: 120, height: 40 },
-  md: { width: 180, height: 60 },
-  lg: { width: 240, height: 80 },
-  xl: { width: 320, height: 107 },
+const sizeClasses = {
+  sm: "text-xl",
+  md: "text-2xl",
+  lg: "text-4xl",
+  xl: "text-5xl",
 }
 
 export default function Logo({ size = "md", className = "" }: LogoProps) {
   const { siteName } = usePalaceConfig()
-  const { width, height } = sizes[size]
   return (
-    <div className={`relative ${className}`}>
-      <Image
-        src="/palace-casino/logo.png"
-        alt={siteName}
-        width={width}
-        height={height}
-        className="object-contain"
-        priority
-      />
+    <div className={`flex items-center gap-2 ${className}`}>
+      <span className={`font-serif font-black tracking-widest text-white uppercase ${sizeClasses[size]}`}>
+        {siteName}
+      </span>
     </div>
   )
 }

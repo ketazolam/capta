@@ -21,9 +21,6 @@ import FinalCTA from "./FinalCTA"
 import LiveNotifications from "./LiveNotifications"
 import ScrollTracker from "./ScrollTracker"
 import ExitIntentPopup from "./ExitIntentPopup"
-import WhatsAppButton from "./WhatsAppButton"
-import RecentDeposits from "./RecentDeposits"
-import RegistrationProgress from "./RegistrationProgress"
 
 function PalaceCasinoInner(props: TemplateProps) {
   return (
@@ -47,10 +44,7 @@ function PalaceCasinoInner(props: TemplateProps) {
 
         {/* Floating UI */}
         <LiveNotifications />
-        <RecentDeposits />
-        <RegistrationProgress />
         <ExitIntentPopup />
-        <WhatsAppButton />
       </div>
     </PalaceConfigProvider>
   )
