@@ -52,11 +52,12 @@ export default async function AnalyticsPage({
     .order("created_at", { ascending: false })
 
   // RPC with optional page_id filter
+  // Always include p_page_id (even null) to disambiguate the overloaded RPC function
   const rpcParams: Record<string, unknown> = {
     p_project_id: projectId,
     p_since: since.toISOString(),
+    p_page_id: pageFilter || null,
   }
-  if (pageFilter) rpcParams.p_page_id = pageFilter
 
   const { data: rpcData, error: rpcError } = await supabase
     .rpc("get_analytics_summary", rpcParams)

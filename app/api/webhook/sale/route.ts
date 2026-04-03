@@ -68,9 +68,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, capi: false })
   }
 
-  // Send Purchase event to Meta CAPI
-  const ip = (req as Request & { headers: Headers }).headers.get("x-forwarded-for")?.split(",")[0] || ""
-  const userAgent = (req as Request & { headers: Headers }).headers.get("user-agent") || ""
+  // Double-send guard + visitor data
+  const { data: saleRecord } = await supabase
+    .from("sales")
+    .select("meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+    .eq("id", saleId)
+    .single()
+
+  if (saleRecord?.meta_event_sent === true) {
+    // Already sent — just confirm without re-firing CAPI
+    await supabase.from("sales").update({ status: "confirmed" }).eq("id", saleId)
+    await supabase.from("events").insert({ project_id: projectId, page_id: pageId || null, event_type: "purchase", session_id: saleId, phone: phone || null })
+    if (phone && projectId) {
+      await supabase.rpc("increment_contact_purchase", { p_project_id: projectId, p_phone: phone, p_amount: amount || 0 })
+    }
+    return NextResponse.json({ ok: true, capi: false, skipped: "already_sent" })
+  }
+
+  // Send Purchase event to Meta CAPI using visitor data captured at click time
   const eventId = `purchase_${saleId}`
   await sendMetaEvent({
     pixelId: metaPixelId,
@@ -79,9 +94,11 @@ export async function POST(req: Request) {
     eventId,
     userData: {
       phone,
-      client_ip_address: ip || undefined,
-      client_user_agent: userAgent || undefined,
-      external_id: saleId,
+      client_ip_address: saleRecord?.visitor_ip || undefined,
+      client_user_agent: saleRecord?.visitor_ua || undefined,
+      external_id: saleRecord?.visitor_session_id || saleId,
+      fbp: saleRecord?.visitor_fbp || undefined,
+      fbc: saleRecord?.visitor_fbc || undefined,
     },
     customData: {
       value: amount ?? 0,

@@ -35,7 +35,12 @@ export default async function SettingsGeneralPage({
     project = projectData
   }
 
-  const pixels = sp.pixels ? JSON.parse(decodeURIComponent(sp.pixels)) : null
+  let pixels = null
+  try {
+    pixels = sp.pixels ? JSON.parse(decodeURIComponent(sp.pixels)) : null
+  } catch {
+    // malformed pixels param — ignore
+  }
 
   return (
     <div className="p-8 max-w-2xl">

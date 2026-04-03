@@ -40,7 +40,7 @@ export default function SaleActions({ saleId, projectId, phone, amount, imageUrl
           status: newStatus,
           project_id: projectId,
           phone,
-          amount: editAmount ? parseFloat(editAmount) : amount,
+          amount: editAmount !== "" && !isNaN(parseFloat(editAmount)) ? parseFloat(editAmount) : amount,
           reference: editRef || undefined,
         }),
       })

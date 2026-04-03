@@ -18,6 +18,12 @@ export async function POST(req: NextRequest) {
     let { event_type, project_id, page_id, line_id, session_id, phone, ref_code, fbp, fbc, source_url } = body
     const { tracking_id } = body
 
+    // Validate event_type — "purchase" must come from webhook/comprobante or sales confirmation, not client
+    const VALID_CLIENT_EVENTS = ["page_view", "button_click", "view_content", "conversation_start", "exit_intent_shown", "high_engagement", "testimonial_view", "scroll_depth"]
+    if (!VALID_CLIENT_EVENTS.includes(event_type)) {
+      return NextResponse.json({ error: "Invalid event_type" }, { status: 400 })
+    }
+
     // Resolve project_id + page_id from tracking_id (external pages)
     let isExternal = false
     if (tracking_id && (!project_id || !page_id)) {

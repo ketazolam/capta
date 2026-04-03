@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/meta/callback`
   const state = Buffer.from(JSON.stringify({ projectId, userId: user.id })).toString("base64url")
 
-  const scope = "ads_read,business_management"
+  const scope = "ads_management"
   const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}&response_type=code`
 
   return NextResponse.redirect(authUrl)

@@ -21,6 +21,17 @@ export default async function DashboardPage() {
   const orgRaw = orgs?.[0]?.organizations
   const orgId = (orgRaw as unknown as { id: string } | null)?.id
 
+  if (!orgId) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-zinc-400 text-sm">Tu cuenta no tiene una organización asignada.</p>
+          <p className="text-zinc-600 text-xs mt-1">Contactá al administrador para que te invite a un workspace.</p>
+        </div>
+      </div>
+    )
+  }
+
   const { data: projects } = await supabase
     .from("projects")
     .select("id, name, created_at")

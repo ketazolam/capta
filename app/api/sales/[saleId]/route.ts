@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServiceClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 
 // PATCH /api/sales/[saleId] — confirm or reject a sale
@@ -16,6 +16,12 @@ export async function PATCH(
       return NextResponse.json({ error: "status must be confirmed or rejected" }, { status: 400 })
     }
 
+    // Auth check — dashboard actions require authenticated user
+    const authClient = await createClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    // Use service client for subsequent DB ops (need to read visitor data, etc.)
     const supabase = await createServiceClient()
 
     // Update sale
@@ -38,7 +44,7 @@ export async function PATCH(
       // Get sale record for attribution + double-send guard + visitor data
       const { data: saleRecord } = await supabase
         .from("sales")
-        .select("page_id, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+        .select("page_id, amount, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
         .eq("id", saleId)
         .single()
       const salePageId = saleRecord?.page_id ?? null
@@ -73,7 +79,7 @@ export async function PATCH(
             fbc: saleRecord?.visitor_fbc || undefined,
           },
           customData: {
-            value: amount ?? 0,
+            value: amount ?? saleRecord?.amount ?? 0,
             currency: "ARS",
             content_name: proj?.name || "",
           },
@@ -114,6 +120,10 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ saleId: string }> }
 ) {
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   const { saleId } = await params
   const supabase = await createServiceClient()
   await supabase.from("sales").update({ status: "rejected" }).eq("id", saleId)
