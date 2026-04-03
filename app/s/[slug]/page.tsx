@@ -100,9 +100,18 @@ export default async function SmartLinkPage({
       .eq("is_active", true)
       .eq("status", "connected")
 
-    if (lines && lines.length === 1) {
+    if (!lines || lines.length === 0) {
+      // No connected lines — fallback to any active line to avoid breaking the page
+      const { data: fallbackLines } = await supabase
+        .from("lines")
+        .select("id, phone_number, name")
+        .eq("project_id", page.project_id)
+        .eq("is_active", true)
+        .limit(1)
+      targetLine = fallbackLines?.[0] ?? null
+    } else if (lines.length === 1) {
       targetLine = lines[0]
-    } else if (lines && lines.length > 1) {
+    } else {
       const { data: usageData } = await supabase
         .rpc("get_line_usage_counts", { p_project_id: page.project_id })
       const countMap: Record<string, number> = {}
