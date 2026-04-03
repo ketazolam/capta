@@ -41,8 +41,32 @@ export default function MetaConnectSection({
   const [selecting, setSelecting] = useState(false)
   const [selectedPixel, setSelectedPixel] = useState<string>("")
   const [saving, setSaving] = useState(false)
+  const [showManual, setShowManual] = useState(false)
+  const [manualPixelId, setManualPixelId] = useState("")
+  const [manualToken, setManualToken] = useState("")
+  const [manualSaving, setManualSaving] = useState(false)
+  const [manualSaved, setManualSaved] = useState(false)
 
   const isConnected = !!(pixelId && hasToken)
+
+  async function handleManualSave() {
+    if (!manualPixelId.trim() || !manualToken.trim()) return
+    setManualSaving(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meta_pixel_id: manualPixelId.trim(), meta_access_token: manualToken.trim() }),
+      })
+      if (res.ok) {
+        setManualSaved(true)
+        setShowManual(false)
+        router.refresh()
+      }
+    } finally {
+      setManualSaving(false)
+    }
+  }
 
   async function handleSelectPixel() {
     if (!selectedPixel) return
@@ -151,15 +175,55 @@ export default function MetaConnectSection({
 
       {/* Connect / Reconnect button */}
       {!pendingPixels && (
-        <a
-          href={`/api/auth/meta/connect?projectId=${projectId}`}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm transition-colors"
-        >
-          <div className="w-4 h-4 rounded bg-white flex items-center justify-center">
-            <span className="text-blue-600 font-bold text-xs">f</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <a
+            href={`/api/auth/meta/connect?projectId=${projectId}`}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm transition-colors"
+          >
+            <div className="w-4 h-4 rounded bg-white flex items-center justify-center">
+              <span className="text-blue-600 font-bold text-xs">f</span>
+            </div>
+            {isConnected ? "Reconectar Meta" : "Conectar con Meta"}
+          </a>
+          <button
+            onClick={() => setShowManual(!showManual)}
+            className="text-zinc-500 hover:text-zinc-300 text-xs underline transition-colors"
+          >
+            {showManual ? "Cancelar" : "Configurar manualmente"}
+          </button>
+        </div>
+      )}
+
+      {/* Manual pixel config */}
+      {showManual && (
+        <div className="space-y-3 p-4 bg-zinc-800 rounded-xl border border-zinc-700">
+          <p className="text-xs text-zinc-400 font-medium">Configuración manual — Pixel ID + Access Token</p>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder="Pixel ID (ej: 1894140284641996)"
+              value={manualPixelId}
+              onChange={(e) => setManualPixelId(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
+            />
+            <input
+              type="password"
+              placeholder="Access Token"
+              value={manualToken}
+              onChange={(e) => setManualToken(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
+            />
           </div>
-          {isConnected ? "Reconectar Meta" : "Conectar con Meta"}
-        </a>
+          <button
+            onClick={handleManualSave}
+            disabled={!manualPixelId.trim() || !manualToken.trim() || manualSaving}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold rounded-lg text-sm transition-colors"
+          >
+            {manualSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            Guardar
+          </button>
+          {manualSaved && <p className="text-emerald-400 text-xs">¡Guardado! Refrescá para ver el estado.</p>}
+        </div>
       )}
     </div>
   )
