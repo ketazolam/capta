@@ -104,10 +104,12 @@ export default async function AnalyticsPage({
 
   const totalRevenue = sales?.reduce((sum, s) => sum + (Number(s.amount) || 0), 0) ?? 0
 
+  const confirmedSalesCount = sales?.length ?? 0
+
   const funnel = [
-    { label: "Visitas", value: counts.page_view,   color: "bg-blue-500" },
-    { label: "Clics",   value: counts.button_click, color: "bg-violet-500" },
-    { label: "Ventas",  value: counts.purchase,     color: "bg-emerald-500" },
+    { label: "Visitas", value: counts.page_view,    color: "bg-blue-500" },
+    { label: "Clics",   value: counts.button_click,  color: "bg-violet-500" },
+    { label: "Ventas",  value: confirmedSalesCount,  color: "bg-emerald-500" },
   ]
 
   const hasData = Object.values(counts).some((v) => v > 0)
