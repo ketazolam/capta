@@ -161,7 +161,7 @@ export default function PageEditorPage() {
                   <span className="text-zinc-600 text-sm">/s/</span>
                   <input
                     value={page.slug}
-                    onChange={(e) => setPage({ ...page, slug: e.target.value })}
+                    onChange={(e) => setPage({ ...page, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })}
                     className="bg-transparent text-white text-sm flex-1 outline-none"
                   />
                 </div>
@@ -303,7 +303,15 @@ export default function PageEditorPage() {
                 {templates.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => setPage({ ...page, template_id: t.id, template_config: {} })}
+                    onClick={() => {
+                      if (activeTemplateId === t.id) return
+                      if (
+                        page.template_config &&
+                        Object.keys(page.template_config).length > 0 &&
+                        !confirm("¿Cambiar template? Se perderá la configuración actual.")
+                      ) return
+                      setPage({ ...page, template_id: t.id, template_config: {} })
+                    }}
                     className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${
                       activeTemplateId === t.id
                         ? "bg-emerald-500/10 border-emerald-500/40 text-white"

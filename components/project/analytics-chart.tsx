@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   AreaChart,
   Area,
@@ -28,6 +29,10 @@ const SERIES = [
 ] as const
 
 export default function AnalyticsChart({ data }: Props) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  if (!mounted) return <div className="h-64" />
   if (!data.length) return null
 
   return (

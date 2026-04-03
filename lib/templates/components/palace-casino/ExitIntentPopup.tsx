@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTracking } from "@/lib/templates/tracking-context"
 import { storageGet, storageSet } from "./_utils"
 
@@ -8,10 +8,14 @@ export default function ExitIntentPopup() {
   const { trackEvent, redirectToWhatsApp } = useTracking()
   const [isVisible, setIsVisible] = useState(false)
   const [activations, setActivations] = useState(0)
+  const hasShownRef = useRef(false)
 
   useEffect(() => {
     const hasShown = storageGet("session", "exitIntentShown")
-    if (hasShown) return
+    if (hasShown) {
+      hasShownRef.current = true
+      return
+    }
 
     setActivations(Math.floor(Math.random() * 5) + 3)
 
@@ -19,7 +23,8 @@ export default function ExitIntentPopup() {
     const timer = setTimeout(() => { canShow = true }, 5000)
 
     const handleMouseLeave = (e: MouseEvent) => {
-      if (canShow && !isVisible && e.clientY <= 10 && window.innerWidth >= 768) {
+      if (canShow && !hasShownRef.current && e.clientY <= 10 && window.innerWidth >= 768) {
+        hasShownRef.current = true
         setIsVisible(true)
         storageSet("session", "exitIntentShown", "true")
         trackEvent("exit_intent_shown")
@@ -31,7 +36,7 @@ export default function ExitIntentPopup() {
       clearTimeout(timer)
       document.removeEventListener("mouseleave", handleMouseLeave)
     }
-  }, [isVisible, trackEvent])
+  }, [trackEvent])
 
   const handleClose = () => {
     setIsVisible(false)

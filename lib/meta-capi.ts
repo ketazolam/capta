@@ -51,24 +51,24 @@ export async function sendMetaEvent(params: MetaEventParams) {
   }
   if (resolvedTestCode) payload.test_event_code = resolvedTestCode
 
-  try {
-    const res = await fetch(
-      `https://graph.facebook.com/v21.0/${pixelId}/events`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      }
-    )
-    const json = await res.json()
-    if (!res.ok) console.error("[Meta CAPI] Error:", json)
-    return json
-  } catch (err) {
-    console.error("[Meta CAPI] Network error:", err)
+  const res = await fetch(
+    `https://graph.facebook.com/v21.0/${pixelId}/events`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
+    }
+  )
+  const json = await res.json()
+  if (!res.ok) {
+    console.error("[Meta CAPI] Error:", json)
+    throw new Error(`Meta CAPI ${res.status}: ${json?.error?.message ?? "unknown"}`)
   }
+  return json
 }
 
 async function hashSHA256(value: string): Promise<string> {

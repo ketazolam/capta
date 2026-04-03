@@ -57,6 +57,18 @@ export async function POST(req: Request) {
   }
 
   // 3. Create sale as pending
+  // Buscar contact_id si hay phone
+  let contact_id: string | null = null
+  if (phone) {
+    const { data: contact } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("project_id", project_id)
+      .eq("phone", phone)
+      .single()
+    contact_id = contact?.id ?? null
+  }
+
   const { data: sale, error: saleErr } = await supabase
     .from("sales")
     .insert({
@@ -64,6 +76,7 @@ export async function POST(req: Request) {
       page_id: inferred_page_id,
       phone: phone || null,
       line_id: line_id || null,
+      contact_id,
       amount: extracted.amount,
       reference: extracted.reference,
       image_url,
@@ -147,29 +160,35 @@ export async function POST(req: Request) {
   }
 
   const eventId = `purchase_${saleId}`
-  await sendMetaEvent({
-    pixelId: metaPixelId,
-    accessToken: metaAccessToken,
-    eventName: "Purchase",
-    eventId,
-    userData: {
-      phone,
-      external_id: visitor_session_id || saleId,
-      fbp: visitor_fbp || undefined,
-      fbc: visitor_fbc || undefined,
-      client_ip_address: visitor_ip || undefined,
-      client_user_agent: visitor_ua || undefined,
-    },
-    customData: {
-      value: extracted.amount ?? 0,
-      currency: "ARS",
-      content_name: projectName,
-    },
-  })
+  let capiSent = false
+  try {
+    await sendMetaEvent({
+      pixelId: metaPixelId,
+      accessToken: metaAccessToken,
+      eventName: "Purchase",
+      eventId,
+      userData: {
+        phone,
+        external_id: visitor_session_id || saleId,
+        fbp: visitor_fbp || undefined,
+        fbc: visitor_fbc || undefined,
+        client_ip_address: visitor_ip || undefined,
+        client_user_agent: visitor_ua || undefined,
+      },
+      customData: {
+        value: extracted.amount ?? 0,
+        currency: "ARS",
+        content_name: projectName,
+      },
+    })
+    capiSent = true
+  } catch (err) {
+    console.error("[webhook/comprobante] CAPI error:", err)
+  }
 
   await supabase
     .from("sales")
-    .update({ status: "confirmed", meta_event_sent: true })
+    .update({ status: "confirmed", meta_event_sent: capiSent })
     .eq("id", saleId)
   await supabase.from("events").insert({ project_id, page_id: inferred_page_id, event_type: "purchase", session_id: saleId, phone: phone || null })
 

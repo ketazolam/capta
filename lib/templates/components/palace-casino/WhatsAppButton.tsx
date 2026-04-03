@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { X } from "lucide-react"
 import { useTracking } from "@/lib/templates/tracking-context"
 import { storageGet, storageSet } from "./_utils"
@@ -18,17 +18,21 @@ export default function WhatsAppButton() {
   const [isVisible, setIsVisible] = useState(false)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const [dismissCount, setDismissCount] = useState(0)
+  const dismissCountRef = useRef(0)
 
   useEffect(() => {
     const dismissed = storageGet("local", "whatsappTooltipDismissed")
-    if (dismissed && parseInt(dismissed, 10) >= 2) setDismissCount(2)
+    if (dismissed && parseInt(dismissed, 10) >= 2) {
+      setDismissCount(2)
+      dismissCountRef.current = 2
+    }
 
     const timer = setTimeout(() => setIsVisible(true), 1000)
     const initialTooltip = setTimeout(() => {
-      if (dismissCount < 2) setShowTooltip(true)
+      if (dismissCountRef.current < 2) setShowTooltip(true)
     }, 30000)
     const messageInterval = setInterval(() => {
-      if (dismissCount < 2) {
+      if (dismissCountRef.current < 2) {
         setCurrentMessageIndex((prev) => {
           const next = (prev + 1) % MESSAGES.length
           setShowTooltip(true)
@@ -42,7 +46,7 @@ export default function WhatsAppButton() {
       clearTimeout(initialTooltip)
       clearInterval(messageInterval)
     }
-  }, [dismissCount])
+  }, [])
 
   const handleClick = async () => {
     await redirectToWhatsApp()
@@ -52,6 +56,7 @@ export default function WhatsAppButton() {
     setShowTooltip(false)
     const newCount = dismissCount + 1
     setDismissCount(newCount)
+    dismissCountRef.current = newCount
     storageSet("local", "whatsappTooltipDismissed", newCount.toString())
   }
 

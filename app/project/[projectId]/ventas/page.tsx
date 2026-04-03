@@ -149,6 +149,7 @@ export default async function VentasPage({
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Cliente</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Monto</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Referencia</th>
+                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Comprobante</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Fecha</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Acción</th>
                 </tr>
@@ -169,6 +170,17 @@ export default async function VentasPage({
                       </td>
                       <td className="px-4 py-3 text-zinc-400 text-xs max-w-[120px] truncate">
                         {sale.reference || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {(sale as Record<string, unknown>).image_url ? (
+                          <a href={(sale as Record<string, unknown>).image_url as string} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={(sale as Record<string, unknown>).image_url as string}
+                              alt="comprobante"
+                              className="max-w-[40px] max-h-[40px] object-contain rounded border border-zinc-700"
+                            />
+                          </a>
+                        ) : "—"}
                       </td>
                       <td className="px-4 py-3 text-zinc-500 text-xs">
                         {new Date(sale.created_at).toLocaleDateString("es-AR")}

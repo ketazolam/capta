@@ -87,28 +87,34 @@ export async function POST(req: Request) {
 
   // Send Purchase event to Meta CAPI using visitor data captured at click time
   const eventId = `purchase_${saleId}`
-  await sendMetaEvent({
-    pixelId: metaPixelId,
-    accessToken: metaAccessToken,
-    eventName: "Purchase",
-    eventId,
-    userData: {
-      phone,
-      client_ip_address: saleRecord?.visitor_ip || undefined,
-      client_user_agent: saleRecord?.visitor_ua || undefined,
-      external_id: saleRecord?.visitor_session_id || saleId,
-      fbp: saleRecord?.visitor_fbp || undefined,
-      fbc: saleRecord?.visitor_fbc || undefined,
-    },
-    customData: {
-      value: amount ?? 0,
-      currency: "ARS",
-      content_name: projectName,
-    },
-  })
+  let capiSent = false
+  try {
+    await sendMetaEvent({
+      pixelId: metaPixelId,
+      accessToken: metaAccessToken,
+      eventName: "Purchase",
+      eventId,
+      userData: {
+        phone,
+        client_ip_address: saleRecord?.visitor_ip || undefined,
+        client_user_agent: saleRecord?.visitor_ua || undefined,
+        external_id: saleRecord?.visitor_session_id || saleId,
+        fbp: saleRecord?.visitor_fbp || undefined,
+        fbc: saleRecord?.visitor_fbc || undefined,
+      },
+      customData: {
+        value: amount ?? 0,
+        currency: "ARS",
+        content_name: projectName,
+      },
+    })
+    capiSent = true
+  } catch (err) {
+    console.error("[webhook/sale] CAPI error:", err)
+  }
 
   // Mark sale as confirmed
-  await supabase.from("sales").update({ status: "confirmed", meta_event_sent: true }).eq("id", saleId)
+  await supabase.from("sales").update({ status: "confirmed", meta_event_sent: capiSent }).eq("id", saleId)
   await supabase.from("events").insert({ project_id: projectId, page_id: pageId || null, event_type: "purchase", session_id: saleId, phone: phone || null })
 
   // Atomic contact aggregate update
@@ -120,5 +126,5 @@ export async function POST(req: Request) {
     })
   }
 
-  return NextResponse.json({ ok: true, capi: true, eventId })
+  return NextResponse.json({ ok: true, capi: capiSent, eventId })
 }

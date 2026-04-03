@@ -1,5 +1,32 @@
+import { createClient } from "@/lib/supabase/server"
 import { createServiceClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+
+const STATE_MAX_AGE_MS = 10 * 60 * 1000 // 10 minutes
+
+async function verifyState(state: string, secret: string): Promise<{ projectId: string; userId: string } | null> {
+  const dotIdx = state.lastIndexOf(".")
+  if (dotIdx === -1) return null
+  const payload = state.slice(0, dotIdx)
+  const receivedSig = state.slice(dotIdx + 1)
+
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]
+  )
+  const sigBytes = Buffer.from(receivedSig, "base64url")
+  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, enc.encode(payload))
+  if (!valid) return null
+
+  try {
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString())
+    if (!decoded.projectId || !decoded.userId || !decoded.ts) return null
+    if (Date.now() - decoded.ts > STATE_MAX_AGE_MS) return null
+    return { projectId: decoded.projectId, userId: decoded.userId }
+  } catch {
+    return null
+  }
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -12,21 +39,28 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${appUrl}/dashboard?meta_error=cancelled`)
   }
 
-  let projectId: string
-  try {
-    const decoded = JSON.parse(Buffer.from(state, "base64url").toString())
-    projectId = decoded.projectId
-  } catch {
+  // Verify HMAC-signed state
+  const secret = process.env.META_APP_SECRET!
+  const verified = await verifyState(state, secret)
+  if (!verified) {
     return NextResponse.redirect(`${appUrl}/dashboard?meta_error=invalid_state`)
+  }
+  const { projectId, userId } = verified
+
+  // Verify authenticated user matches state
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user || user.id !== userId) {
+    return NextResponse.redirect(`${appUrl}/dashboard?meta_error=unauthorized`)
   }
 
   const appId = process.env.META_APP_ID!
-  const appSecret = process.env.META_APP_SECRET!
+  const appSecret = secret
   const redirectUri = `${appUrl}/api/auth/meta/callback`
 
   // 1. Exchange code for short-lived token
   const tokenRes = await fetch(
-    `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`
+    `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`
   )
   const tokenData = await tokenRes.json()
   if (!tokenData.access_token) {
@@ -35,14 +69,14 @@ export async function GET(req: Request) {
 
   // 2. Exchange for long-lived token (60 days)
   const llRes = await fetch(
-    `https://graph.facebook.com/v19.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokenData.access_token}`
+    `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokenData.access_token}`
   )
   const llData = await llRes.json()
   const longLivedToken = llData.access_token || tokenData.access_token
 
   // 3. Get ad accounts + pixels
   const accountsRes = await fetch(
-    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,adspixels{id,name}&access_token=${longLivedToken}&limit=50`
+    `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name,adspixels{id,name}&access_token=${longLivedToken}&limit=50`
   )
   const accountsData = await accountsRes.json()
 
@@ -76,7 +110,6 @@ export async function GET(req: Request) {
   }
 
   // Multiple pixels — store token temporarily and redirect to selection
-  // Store token + pixels in a temp record
   await supabase.from("projects").update({
     meta_access_token: longLivedToken,
   }).eq("id", projectId)

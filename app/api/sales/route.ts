@@ -17,11 +17,19 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     // Upsert contact
+    let contact_id: string | null = null
     if (phone) {
       await supabase.from("contacts").upsert(
         { project_id, phone, last_seen_at: new Date().toISOString() },
         { onConflict: "project_id,phone", ignoreDuplicates: false }
       )
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("project_id", project_id)
+        .eq("phone", phone)
+        .single()
+      contact_id = contact?.id ?? null
     }
 
     const { data: sale, error } = await supabase
@@ -31,6 +39,7 @@ export async function POST(req: NextRequest) {
         page_id: page_id || null,
         line_id: line_id || null,
         phone: phone || null,
+        contact_id,
         amount: amount || null,
         reference: reference || null,
         image_url: image_url || null,
