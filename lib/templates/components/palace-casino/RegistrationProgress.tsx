@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useTracking } from "@/lib/templates/tracking-context"
-import { usePalaceConfig } from "./_context"
 import { storageGet, storageSet } from "./_utils"
 
 interface Step {
@@ -13,7 +12,6 @@ interface Step {
 }
 
 export default function RegistrationProgress() {
-  const { whatsappUrl } = usePalaceConfig()
   const { redirectToWhatsApp } = useTracking()
   const [isVisible, setIsVisible] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
