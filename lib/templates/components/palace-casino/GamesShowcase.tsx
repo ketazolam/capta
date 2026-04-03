@@ -7,12 +7,12 @@ import { usePalaceConfig } from "./_context"
 import { useTracking } from "@/lib/templates/tracking-context"
 
 const GAME_IMAGES: Record<string, string> = {
-  "sweet-bonanza": "/media/item-01.jpg",
-  "aviator": "/media/item-02.jpg",
-  "gates-olympus": "/media/item-03.jpg",
-  "fortune-tiger": "/media/item-04.jpg",
-  "ruleta-vivo": "/media/item-05.jpg",
-  "spaceman": "/media/item-06.jpg",
+  "sweet-bonanza": "/palace-casino/games/sweet-bonanza.jpg",
+  "aviator": "/palace-casino/games/aviator.jpg",
+  "gates-olympus": "/palace-casino/games/gates-of-olympus.jpg",
+  "fortune-tiger": "/palace-casino/games/fortune-tiger.jpg",
+  "ruleta-vivo": "/palace-casino/games/roulette-live.jpg",
+  "spaceman": "/palace-casino/games/spaceman.jpg",
 }
 
 const gamePlaceholders: Record<string, { gradient: string; emoji: string }> = {
