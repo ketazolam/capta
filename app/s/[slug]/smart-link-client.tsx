@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useCallback, useEffect } from "react"
 
 interface Props {
   pageId: string
@@ -9,8 +9,6 @@ interface Props {
   waPhone: string | null
   waMessage: string
   autoRedirect: boolean
-  metaPixelId: string | null
-  metaAccessToken: string | null
   lineId: string | null
 }
 
@@ -27,20 +25,8 @@ export default function SmartLinkClient({
     ? `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`
     : null
 
-  async function trackAndRedirect() {
-    await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        project_id: projectId,
-        page_id: pageId,
-        line_id: lineId,
-        event_type: "button_click",
-        session_id: sessionId,
-      }),
-    })
-
-    if (waUrl) {
+  const trackAndRedirect = useCallback(async () => {
+    try {
       await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,14 +34,34 @@ export default function SmartLinkClient({
           project_id: projectId,
           page_id: pageId,
           line_id: lineId,
-          event_type: "conversation_start",
+          event_type: "button_click",
           session_id: sessionId,
-          phone: waPhone,
         }),
       })
-      window.location.href = waUrl
+
+      if (waUrl) {
+        await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: projectId,
+            page_id: pageId,
+            line_id: lineId,
+            event_type: "conversation_start",
+            session_id: sessionId,
+            phone: waPhone,
+          }),
+        })
+      }
+    } catch (err) {
+      console.error("[SmartLink] tracking error:", err)
+    } finally {
+      // Always redirect — tracking failures must not block the user
+      if (waUrl) {
+        window.location.href = waUrl
+      }
     }
-  }
+  }, [projectId, pageId, lineId, sessionId, waPhone, waUrl])
 
   useEffect(() => {
     if (autoRedirect && waUrl) {
@@ -64,7 +70,7 @@ export default function SmartLinkClient({
       }, 1500)
       return () => clearTimeout(timer)
     }
-  }, [autoRedirect, waUrl])
+  }, [autoRedirect, waUrl, trackAndRedirect])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">

@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || ""
     const userAgent = req.headers.get("user-agent") || ""
 
-    // Insert event
-    await supabase.from("events").insert({
+    // Insert event — check for errors
+    const { error: insertError } = await supabase.from("events").insert({
       project_id,
       page_id,
       line_id,
@@ -24,6 +24,11 @@ export async function POST(req: NextRequest) {
       user_agent: userAgent,
       ref_code,
     })
+
+    if (insertError) {
+      console.error("[Events API] insert error:", insertError)
+      return NextResponse.json({ error: "Failed to insert event" }, { status: 500 })
+    }
 
     // Auto-create/update contact on conversation_start
     if (event_type === "conversation_start" && phone && project_id) {
@@ -63,8 +68,8 @@ export async function POST(req: NextRequest) {
         if (proj?.attribution_config?.meta) {
           metaEnabled = proj.attribution_config.meta[event_type] !== false
         }
-      } catch {
-        // columns may not exist yet — ignore
+      } catch (err) {
+        console.error("[Events API] project config fetch error:", err)
       }
     } else if (project_id) {
       // Pixel config came from page-level, still check project attribution config
@@ -77,7 +82,9 @@ export async function POST(req: NextRequest) {
         if (proj?.attribution_config?.meta) {
           metaEnabled = proj.attribution_config.meta[event_type] !== false
         }
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.error("[Events API] attribution config fetch error:", err)
+      }
     }
 
     if (pixelId && accessToken && metaEnabled) {
@@ -91,8 +98,8 @@ export async function POST(req: NextRequest) {
       const metaEventName = metaEventMap[event_type]
       if (metaEventName) {
         await sendMetaEvent({
-          pixelId: pixelId!,
-          accessToken: accessToken!,
+          pixelId,
+          accessToken,
           eventName: metaEventName,
           eventId: nanoid(),
           userData: {

@@ -61,20 +61,13 @@ export async function POST(req: Request) {
   if (!metaPixelId || !metaAccessToken || !purchaseEnabled) {
     // No Meta config or purchase event disabled — just mark sale as confirmed
     await supabase.from("sales").update({ status: "confirmed" }).eq("id", saleId)
+    // Atomic contact aggregate update
     if (phone && projectId) {
-      const { data: existing } = await supabase
-        .from("contacts")
-        .select("id, purchase_count, total_purchases")
-        .eq("project_id", projectId)
-        .eq("phone", phone)
-        .single()
-      if (existing) {
-        await supabase.from("contacts").update({
-          purchase_count: (existing.purchase_count || 0) + 1,
-          total_purchases: (Number(existing.total_purchases) || 0) + (amount || 0),
-          last_seen_at: new Date().toISOString(),
-        }).eq("id", existing.id)
-      }
+      await supabase.rpc("increment_contact_purchase", {
+        p_project_id: projectId,
+        p_phone: phone,
+        p_amount: amount || 0,
+      })
     }
     return NextResponse.json({ ok: true, capi: false })
   }
@@ -97,21 +90,13 @@ export async function POST(req: Request) {
   // Mark sale as confirmed
   await supabase.from("sales").update({ status: "confirmed", meta_event_sent: true }).eq("id", saleId)
 
-  // Update contact aggregates
+  // Atomic contact aggregate update
   if (phone && projectId) {
-    const { data: existing } = await supabase
-      .from("contacts")
-      .select("id, purchase_count, total_purchases")
-      .eq("project_id", projectId)
-      .eq("phone", phone)
-      .single()
-    if (existing) {
-      await supabase.from("contacts").update({
-        purchase_count: (existing.purchase_count || 0) + 1,
-        total_purchases: (Number(existing.total_purchases) || 0) + (amount || 0),
-        last_seen_at: new Date().toISOString(),
-      }).eq("id", existing.id)
-    }
+    await supabase.rpc("increment_contact_purchase", {
+      p_project_id: projectId,
+      p_phone: phone,
+      p_amount: amount || 0,
+    })
   }
 
   return NextResponse.json({ ok: true, capi: true, eventId })

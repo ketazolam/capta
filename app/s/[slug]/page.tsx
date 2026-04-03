@@ -5,18 +5,17 @@ import SmartLinkClient from "./smart-link-client"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { nanoid } from "nanoid"
 
-// Facebook/Meta crawler user agents
-const META_BOT_AGENTS = [
+// Crawler/bot user agents — skip tracking for these
+const BOT_AGENTS = [
   "facebookexternalhit",
   "Facebot",
   "facebookcatalog",
   "FacebookBot",
   "meta-externalagent",
-  "LinkedInBot",
 ]
 
-function isMetaBot(userAgent: string): boolean {
-  return META_BOT_AGENTS.some((bot) =>
+function isBot(userAgent: string): boolean {
+  return BOT_AGENTS.some((bot) =>
     userAgent.toLowerCase().includes(bot.toLowerCase())
   )
 }
@@ -50,7 +49,7 @@ export default async function SmartLinkPage({
   if (!page) notFound()
 
   // Bot detection — show safe/alternative content
-  if (isMetaBot(userAgent)) {
+  if (isBot(userAgent)) {
     return <BotContent pageName={slug} />
   }
 
@@ -62,18 +61,15 @@ export default async function SmartLinkPage({
     .eq("is_active", true)
     .eq("status", "connected")
 
-  // Round-robin: pick next line based on event count
-  const { data: usageCounts } = await supabase
-    .from("events")
-    .select("line_id")
-    .eq("project_id", page.project_id)
-    .eq("event_type", "conversation_start")
-
+  // Round-robin: pick next line based on usage counts via RPC (no 1000-row truncation)
   let targetLine = lines?.[0] || null
-  if (lines && lines.length > 1 && usageCounts) {
+  if (lines && lines.length > 1) {
+    const { data: usageData } = await supabase
+      .rpc("get_line_usage_counts", { p_project_id: page.project_id })
+
     const countMap: Record<string, number> = {}
-    usageCounts.forEach((e) => {
-      if (e.line_id) countMap[e.line_id] = (countMap[e.line_id] || 0) + 1
+    usageData?.forEach((row: { line_id: string; usage_count: number }) => {
+      countMap[row.line_id] = row.usage_count
     })
     targetLine = lines.reduce((min, line) =>
       (countMap[line.id] || 0) < (countMap[min.id] || 0) ? line : min
@@ -122,7 +118,7 @@ export default async function SmartLinkPage({
     })
   }
 
-  await supabase.from("events").insert({
+  const { error: eventInsertError } = await supabase.from("events").insert({
     project_id: page.project_id,
     page_id: page.id,
     event_type: "page_view",
@@ -131,6 +127,10 @@ export default async function SmartLinkPage({
     user_agent: userAgent,
     ref_code: sp.ref,
   })
+
+  if (eventInsertError) {
+    console.error("[SmartLink] page_view insert error:", eventInsertError)
+  }
 
   const waMessage = page.whatsapp_message?.replace("{{ref}}", sp.ref || "") || "Hola!"
   const waPhone = targetLine?.phone_number?.replace(/\D/g, "") || null
@@ -143,8 +143,6 @@ export default async function SmartLinkPage({
       waPhone={waPhone}
       waMessage={waMessage}
       autoRedirect={page.auto_redirect}
-      metaPixelId={page.meta_pixel_id}
-      metaAccessToken={page.meta_access_token}
       lineId={targetLine?.id || null}
     />
   )

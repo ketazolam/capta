@@ -11,7 +11,7 @@ function getDateRange(range: string): Date {
     case "90d": return new Date(now.getTime() - 90 * 86400000)
     default: { // "today"
       const start = new Date(now)
-      start.setHours(0, 0, 0, 0)
+      start.setUTCHours(0, 0, 0, 0)
       return start
     }
   }
@@ -30,13 +30,7 @@ export default async function AnalyticsPage({
   const supabase = await createClient()
 
   const since = getDateRange(range)
-
-  // Get event counts by type for the selected period
-  const { data: events } = await supabase
-    .from("events")
-    .select("event_type, created_at")
-    .eq("project_id", projectId)
-    .gte("created_at", since.toISOString())
+  const numDays = range === "today" ? 1 : range === "15d" ? 15 : range === "30d" ? 30 : 90
 
   const counts = {
     page_view: 0,
@@ -44,27 +38,54 @@ export default async function AnalyticsPage({
     conversation_start: 0,
     purchase: 0,
   }
-  events?.forEach((e) => {
-    if (e.event_type in counts) counts[e.event_type as keyof typeof counts]++
-  })
 
-  // Build daily chart data
+  // Seed dayMap with zeros for every day in range (UTC-aligned)
   const dayMap: Record<string, typeof counts> = {}
-  // Seed every day in range with zeros
-  const numDays = range === "today" ? 1 : range === "15d" ? 15 : range === "30d" ? 30 : 90
   for (let i = numDays - 1; i >= 0; i--) {
     const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    d.setDate(d.getDate() - i)
+    d.setUTCHours(0, 0, 0, 0)
+    d.setUTCDate(d.getUTCDate() - i)
     const key = d.toISOString().slice(0, 10)
     dayMap[key] = { page_view: 0, button_click: 0, conversation_start: 0, purchase: 0 }
   }
-  events?.forEach((e) => {
-    const key = e.created_at.slice(0, 10)
-    if (dayMap[key] && e.event_type in dayMap[key]) {
-      dayMap[key][e.event_type as keyof typeof counts]++
+
+  // Use RPC for pre-aggregated data (no 1000-row truncation)
+  const { data: rpcData, error: rpcError } = await supabase
+    .rpc("get_analytics_summary", {
+      p_project_id: projectId,
+      p_since: since.toISOString(),
+    })
+
+  if (rpcData && !rpcError) {
+    // RPC returns { event_type, event_date, event_count }
+    for (const row of rpcData) {
+      const key = row.event_date as string // already "YYYY-MM-DD"
+      if (row.event_type in counts) {
+        counts[row.event_type as keyof typeof counts] += row.event_count
+      }
+      if (dayMap[key] && row.event_type in dayMap[key]) {
+        dayMap[key][row.event_type as keyof typeof counts] += row.event_count
+      }
     }
-  })
+  } else {
+    // Fallback: direct query with explicit limit if RPC not yet deployed
+    if (rpcError) console.error("[Analytics] RPC error, falling back:", rpcError)
+    const { data: events } = await supabase
+      .from("events")
+      .select("event_type, created_at")
+      .eq("project_id", projectId)
+      .gte("created_at", since.toISOString())
+      .limit(50000)
+
+    events?.forEach((e) => {
+      if (e.event_type in counts) counts[e.event_type as keyof typeof counts]++
+      const key = e.created_at.slice(0, 10)
+      if (dayMap[key] && e.event_type in dayMap[key]) {
+        dayMap[key][e.event_type as keyof typeof counts]++
+      }
+    })
+  }
+
   const chartData = Object.entries(dayMap).map(([date, vals]) => ({ date, ...vals }))
 
   // Get total sales amount for the period
