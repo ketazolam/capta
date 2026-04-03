@@ -174,6 +174,8 @@ export default async function SmartLinkPage({
     ip,
     user_agent: userAgent,
     ref_code: sp.ref,
+    fbp: fbp || null,
+    fbc: fbc || null,
   })
 
   if (eventInsertError) {
