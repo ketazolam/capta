@@ -55,7 +55,7 @@ export default function GamesShowcase() {
 
   const handlePlay = async (gameName?: string, trackingItemId?: string) => {
     const url = gameName ? getWhatsAppUrlForGame(gameName) : whatsappUrl
-    await trackEvent("wa_click", gameName
+    await trackEvent("button_click", gameName
       ? { source: "CTA item", itemId: trackingItemId }
       : { source: "CTA listado" }
     )

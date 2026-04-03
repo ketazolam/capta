@@ -33,7 +33,7 @@ export default async function AnalyticsPage({
   const since = getDateRange(range)
   const numDays = range === "today" ? 1 : range === "15d" ? 15 : range === "30d" ? 30 : 90
 
-  const counts = { page_view: 0, button_click: 0, conversation_start: 0, purchase: 0 }
+  const counts = { page_view: 0, button_click: 0, purchase: 0 }
 
   const dayMap: Record<string, typeof counts> = {}
   for (let i = numDays - 1; i >= 0; i--) {
@@ -41,7 +41,7 @@ export default async function AnalyticsPage({
     d.setUTCHours(0, 0, 0, 0)
     d.setUTCDate(d.getUTCDate() - i)
     const key = d.toISOString().slice(0, 10)
-    dayMap[key] = { page_view: 0, button_click: 0, conversation_start: 0, purchase: 0 }
+    dayMap[key] = { page_view: 0, button_click: 0, purchase: 0 }
   }
 
   // Fetch pages for the filter dropdown
@@ -104,10 +104,9 @@ export default async function AnalyticsPage({
   const totalRevenue = sales?.reduce((sum, s) => sum + (Number(s.amount) || 0), 0) ?? 0
 
   const funnel = [
-    { label: "Visitas",   value: counts.page_view,         color: "bg-blue-500" },
-    { label: "Clics",     value: counts.button_click,       color: "bg-violet-500" },
-    { label: "Mensajes",  value: counts.conversation_start, color: "bg-yellow-500" },
-    { label: "Ventas",    value: counts.purchase,           color: "bg-emerald-500" },
+    { label: "Visitas", value: counts.page_view,   color: "bg-blue-500" },
+    { label: "Clics",   value: counts.button_click, color: "bg-violet-500" },
+    { label: "Ventas",  value: counts.purchase,     color: "bg-emerald-500" },
   ]
 
   const hasData = Object.values(counts).some((v) => v > 0)
@@ -211,7 +210,7 @@ export default async function AnalyticsPage({
             </div>
           )}
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             {funnel.map((item) => {
               const prev = funnel[funnel.indexOf(item) - 1]
               const rate = prev && prev.value > 0

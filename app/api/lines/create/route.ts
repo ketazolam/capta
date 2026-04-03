@@ -35,7 +35,10 @@ export async function POST(req: Request) {
   // Start Baileys session
   const baileysUrl = process.env.BAILEYS_URL
   if (baileysUrl) {
-    await fetch(`${baileysUrl}/lines/${line.id}/start`, { method: "POST" }).catch(() => {})
+    await fetch(`${baileysUrl}/lines/${line.id}/start`, {
+      method: "POST",
+      headers: process.env.INTERNAL_SECRET ? { "x-internal-secret": process.env.INTERNAL_SECRET } : {},
+    }).catch(() => {})
   }
 
   return NextResponse.json({ ok: true, line })

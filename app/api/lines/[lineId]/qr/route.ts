@@ -15,7 +15,9 @@ export async function GET(
   if (!baileysUrl) return NextResponse.json({ error: "BAILEYS_URL not configured" }, { status: 500 })
 
   try {
-    const res = await fetch(`${baileysUrl}/lines/${lineId}/qr`)
+    const res = await fetch(`${baileysUrl}/lines/${lineId}/qr`, {
+      headers: process.env.INTERNAL_SECRET ? { "x-internal-secret": process.env.INTERNAL_SECRET } : {},
+    })
     if (res.status === 204) return NextResponse.json({ qr: null, status: "pending" })
     if (res.status === 404) return NextResponse.json({ qr: null, status: "not_started" })
     const json = await res.json()

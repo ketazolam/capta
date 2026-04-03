@@ -1,3 +1,5 @@
+"use client"
+
 import { Shield, CheckCircle, Lock, Heart } from "lucide-react";
 
 const securityFeatures = [

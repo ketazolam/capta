@@ -15,7 +15,10 @@ export async function POST(
   if (!baileysUrl) return NextResponse.json({ error: "BAILEYS_URL not configured" }, { status: 500 })
 
   try {
-    const res = await fetch(`${baileysUrl}/lines/${lineId}/start`, { method: "POST" })
+    const res = await fetch(`${baileysUrl}/lines/${lineId}/start`, {
+      method: "POST",
+      headers: process.env.INTERNAL_SECRET ? { "x-internal-secret": process.env.INTERNAL_SECRET } : {},
+    })
     const json = await res.json()
     return NextResponse.json(json, { status: res.status })
   } catch (err) {

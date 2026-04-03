@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useParams } from "next/navigation"
-import { Save, Eye, Globe, Settings, Layout } from "lucide-react"
+import { Save, Eye, Globe, Settings, Layout, ExternalLink, Copy, Check } from "lucide-react"
 import { toast } from "sonner"
 import { getAllTemplates } from "@/lib/templates/registry"
 import type { ConfigField } from "@/lib/templates/types"
@@ -21,6 +21,9 @@ interface Page {
   tiktok_pixel_id: string | null
   tiktok_access_token: string | null
   is_published: boolean
+  page_type: string | null
+  external_url: string | null
+  tracking_id: string | null
 }
 
 const templates = getAllTemplates()
@@ -28,6 +31,7 @@ const templates = getAllTemplates()
 export default function PageEditorPage() {
   const params = useParams()
   const pageId = params.pageId as string
+  const projectId = params.projectId as string
 
   const [page, setPage] = useState<Page | null>(null)
   const [tab, setTab] = useState<"settings" | "template">("settings")
@@ -75,6 +79,11 @@ export default function PageEditorPage() {
       <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   )
+
+  // External page view
+  if (page.page_type === "external") {
+    return <ExternalPageView page={page} projectId={projectId} />
+  }
 
   const activeTemplateId = page.template_id || "whatsapp-redirect"
   const activeTemplate = templates.find((t) => t.id === activeTemplateId) ?? templates[0]
@@ -294,6 +303,101 @@ export default function PageEditorPage() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ExternalPageView({ page, projectId }: { page: Page; projectId: string }) {
+  const [copied, setCopied] = useState(false)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
+  const scriptSnippet = `<script src="${appUrl}/capta.js" data-tracking-id="${page.tracking_id}" defer></script>`
+
+  function copyScript() {
+    navigator.clipboard.writeText(scriptSnippet).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-800 bg-[#0d0d0d]">
+        <div className="flex items-center gap-2">
+          <ExternalLink className="w-4 h-4 text-violet-400" />
+          <span className="text-white font-medium text-sm">{page.name}</span>
+          <span className="px-1.5 py-0.5 bg-violet-500/15 text-violet-400 text-xs rounded-full">Externa</span>
+        </div>
+        <a
+          href={`/project/${projectId}/analytics?page_id=${page.id}`}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+        >
+          Ver Analytics
+        </a>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-8 max-w-2xl mx-auto w-full space-y-6">
+        {/* External URL */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
+          <h3 className="text-sm font-semibold text-zinc-300">Página registrada</h3>
+          <a
+            href={page.external_url ?? ""}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-sm transition-colors"
+          >
+            <Globe className="w-4 h-4 shrink-0" />
+            {page.external_url}
+            <ExternalLink className="w-3 h-3 shrink-0" />
+          </a>
+        </div>
+
+        {/* Tracking script */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-zinc-300">Script de tracking</h3>
+            <button
+              onClick={copyScript}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-lg transition-colors"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? "Copiado!" : "Copiar"}
+            </button>
+          </div>
+          <p className="text-xs text-zinc-500">
+            Pegá este script en el <code className="text-zinc-300">&lt;head&gt;</code> o antes del <code className="text-zinc-300">&lt;/body&gt;</code> de tu página:
+          </p>
+          <pre className="bg-zinc-950 border border-zinc-800 rounded-lg p-4 text-xs text-emerald-300 overflow-x-auto whitespace-pre-wrap break-all">
+            {scriptSnippet}
+          </pre>
+          <p className="text-xs text-zinc-600">
+            Tracking ID: <code className="text-zinc-400">{page.tracking_id}</code>
+          </p>
+        </div>
+
+        {/* How it works */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
+          <h3 className="text-sm font-semibold text-zinc-300">¿Cómo funciona?</h3>
+          <ul className="space-y-2 text-xs text-zinc-500">
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 shrink-0">1.</span>
+              El script registra automáticamente cada visita como <code className="text-zinc-300">page_view</code>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 shrink-0">2.</span>
+              Usá <code className="text-zinc-300">window.capta.trackClick(phone, message)</code> en tus botones de WhatsApp para registrar <code className="text-zinc-300">button_click</code>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 shrink-0">3.</span>
+              Los datos aparecen en Analytics de este proyecto, filtrados por esta página
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 shrink-0">4.</span>
+              Tu Meta Pixel sigue funcionando de forma independiente — el script de Capta no interfiere
+            </li>
+          </ul>
         </div>
       </div>
     </div>

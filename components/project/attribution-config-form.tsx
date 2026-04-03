@@ -10,14 +10,13 @@ export interface AttributionConfig {
 }
 
 const DEFAULT_CONFIG: AttributionConfig = {
-  meta: { page_view: true, button_click: true, conversation_start: true, purchase: true },
-  tiktok: { page_view: true, button_click: true, conversation_start: true, purchase: true },
+  meta: { page_view: true, button_click: true, purchase: true },
+  tiktok: { page_view: true, button_click: true, purchase: true },
 }
 
 const EVENT_LABELS: { key: string; label: string; desc: string }[] = [
   { key: "page_view", label: "Vistas de página", desc: "Cuando un visitante visita una página" },
   { key: "button_click", label: "Clicks en botón", desc: "Cuando un visitante hace click en un botón" },
-  { key: "conversation_start", label: "Inicio de conversaciones", desc: "Cuando se inicia una conversación en WhatsApp" },
   { key: "purchase", label: "Ventas", desc: "Cuando ocurre una venta en el chat de WhatsApp" },
 ]
 

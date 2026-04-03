@@ -35,6 +35,15 @@ export async function PATCH(
 
     // If confirming, fire Meta CAPI Purchase + update contact
     if (status === "confirmed" && project_id) {
+      // Get sale record for attribution + double-send guard + visitor data
+      const { data: saleRecord } = await supabase
+        .from("sales")
+        .select("page_id, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+        .eq("id", saleId)
+        .single()
+      const salePageId = saleRecord?.page_id ?? null
+      const alreadySentMeta = saleRecord?.meta_event_sent === true
+
       // Get pixel config
       const { data: proj } = await supabase
         .from("projects")
@@ -46,9 +55,10 @@ export async function PATCH(
       const pixelId = proj?.meta_pixel_id
       const accessToken = proj?.meta_access_token
 
-      if (pixelId && accessToken && purchaseEnabled) {
-        const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || ""
-        const userAgent = req.headers.get("user-agent") || ""
+      if (pixelId && accessToken && purchaseEnabled && !alreadySentMeta) {
+        // Prefer visitor data captured at click time over current request (admin IP/UA)
+        const ip = saleRecord?.visitor_ip || req.headers.get("x-forwarded-for")?.split(",")[0] || ""
+        const userAgent = saleRecord?.visitor_ua || req.headers.get("user-agent") || ""
         await sendMetaEvent({
           pixelId,
           accessToken,
@@ -58,7 +68,9 @@ export async function PATCH(
             phone: phone || undefined,
             client_ip_address: ip || undefined,
             client_user_agent: userAgent || undefined,
-            external_id: saleId,
+            external_id: saleRecord?.visitor_session_id || saleId,
+            fbp: saleRecord?.visitor_fbp || undefined,
+            fbc: saleRecord?.visitor_fbc || undefined,
           },
           customData: {
             value: amount ?? 0,
@@ -70,6 +82,15 @@ export async function PATCH(
         // Mark meta_event_sent
         await supabase.from("sales").update({ meta_event_sent: true }).eq("id", saleId)
       }
+
+        // Insert purchase event for analytics funnel
+      await supabase.from("events").insert({
+        project_id,
+        page_id: salePageId,
+        event_type: "purchase",
+        session_id: saleId,
+        phone: phone || null,
+      })
 
       // Update contact aggregate
       if (phone) {

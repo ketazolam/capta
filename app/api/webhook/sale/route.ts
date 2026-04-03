@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { saleId, projectId, amount, phone } = await req.json()
+  const { saleId, projectId, amount, phone, pageId } = await req.json()
 
   if (!saleId || !projectId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })
@@ -23,17 +23,13 @@ export async function POST(req: Request) {
   let projectName = ""
   let purchaseEnabled = true
 
-  const { data: project, error: projErr } = await supabase
+  const { data: project } = await supabase
     .from("projects")
     .select("meta_pixel_id, meta_access_token, name, attribution_config")
     .eq("id", projectId)
     .single()
 
-  if (projErr && projErr.code === "42703") {
-    // meta columns don't exist yet — try getting just the name
-    const { data: pBasic } = await supabase.from("projects").select("name").eq("id", projectId).single()
-    projectName = pBasic?.name || ""
-  } else if (project) {
+  if (project) {
     metaPixelId = project.meta_pixel_id
     metaAccessToken = project.meta_access_token
     projectName = project.name
@@ -60,6 +56,7 @@ export async function POST(req: Request) {
   if (!metaPixelId || !metaAccessToken || !purchaseEnabled) {
     // No Meta config or purchase event disabled — just mark sale as confirmed
     await supabase.from("sales").update({ status: "confirmed" }).eq("id", saleId)
+    await supabase.from("events").insert({ project_id: projectId, page_id: pageId || null, event_type: "purchase", session_id: saleId, phone: phone || null })
     // Atomic contact aggregate update
     if (phone && projectId) {
       await supabase.rpc("increment_contact_purchase", {
@@ -95,6 +92,7 @@ export async function POST(req: Request) {
 
   // Mark sale as confirmed
   await supabase.from("sales").update({ status: "confirmed", meta_event_sent: true }).eq("id", saleId)
+  await supabase.from("events").insert({ project_id: projectId, page_id: pageId || null, event_type: "purchase", session_id: saleId, phone: phone || null })
 
   // Atomic contact aggregate update
   if (phone && projectId) {

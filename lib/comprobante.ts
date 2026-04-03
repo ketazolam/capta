@@ -49,7 +49,7 @@ export async function analyzeComprobante(imageUrl: string): Promise<ComprobanteD
 }
 
 Reglas:
-- "amount": número en ARS (solo dígitos, sin puntos ni comas). null si no visible.
+- "amount": monto numérico en ARS como número decimal (ej: 15000 o 15000.50). Sin separadores de miles. null si no visible.
 - "reference": número/código de la transacción, CVU, CBU o referencia. null si no visible.
 - "bank": banco o plataforma origen (Mercado Pago, Brubank, Galicia, Santander, etc.). null si no visible.
 - "date": fecha en YYYY-MM-DD. null si no visible.

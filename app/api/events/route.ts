@@ -1,12 +1,38 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
-import { nanoid } from "nanoid"
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { event_type, project_id, page_id, line_id, session_id, phone, ref_code, fbp, fbc, source_url } = body
+    let { event_type, project_id, page_id, line_id, session_id, phone, ref_code, fbp, fbc, source_url } = body
+    const { tracking_id } = body
+
+    // Resolve project_id + page_id from tracking_id (external pages)
+    let isExternal = false
+    if (tracking_id && (!project_id || !page_id)) {
+      const supabaseForLookup = await createServiceClient()
+      const { data: pageRow } = await supabaseForLookup
+        .from("pages")
+        .select("id, project_id")
+        .eq("tracking_id", tracking_id)
+        .single()
+      if (pageRow) {
+        project_id = pageRow.project_id
+        page_id = pageRow.id
+        isExternal = true
+      }
+    }
 
     const supabase = await createServiceClient()
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || ""
@@ -23,6 +49,8 @@ export async function POST(req: NextRequest) {
       ip,
       user_agent: userAgent,
       ref_code,
+      fbp: fbp || null,
+      fbc: fbc || null,
     })
 
     if (insertError) {
@@ -87,11 +115,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (pixelId && accessToken && metaEnabled) {
+    if (pixelId && accessToken && metaEnabled && !isExternal) {
       // page_view is fired server-side in /s/[slug]/page.tsx — skip here to avoid duplicates
+      // isExternal: external pages have their own Meta Pixel — Capta only tracks internal analytics
       const metaEventMap: Record<string, string> = {
         button_click: "Lead",
-        conversation_start: "InitiateCheckout",
         purchase: "Purchase",
       }
 
@@ -115,9 +143,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true }, { headers: CORS_HEADERS })
   } catch (err) {
     console.error("[Events API]", err)
-    return NextResponse.json({ error: "Internal error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal error" }, { status: 500, headers: CORS_HEADERS })
   }
 }

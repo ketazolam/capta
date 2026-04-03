@@ -38,21 +38,6 @@ export default function SmartLinkClient({
           session_id: sessionId,
         }),
       })
-
-      if (waUrl) {
-        await fetch("/api/events", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            project_id: projectId,
-            page_id: pageId,
-            line_id: lineId,
-            event_type: "conversation_start",
-            session_id: sessionId,
-            phone: waPhone,
-          }),
-        })
-      }
     } catch (err) {
       console.error("[SmartLink] tracking error:", err)
     } finally {

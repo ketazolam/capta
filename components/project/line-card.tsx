@@ -79,18 +79,24 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
     }
   }
 
+  const [qrError, setQrError] = useState<string | null>(null)
+
   const fetchQR = useCallback(async () => {
     setQrLoading(true)
     try {
       const res = await fetch(`/api/lines/${line.id}/qr`)
+      if (res.status === 502 || res.status === 503) {
+        setQrError("Servidor de WhatsApp no disponible")
+        return
+      }
       const json = await res.json()
-      if (json.qr) setQrData(json.qr)
+      if (json.qr) { setQrData(json.qr); setQrError(null) }
       if (json.status === "connected") {
         setLine((l) => ({ ...l, status: "connected" }))
         setShowQR(false)
       }
     } catch {
-      // ignore
+      setQrError("No se pudo conectar al servidor de WhatsApp")
     } finally {
       setQrLoading(false)
     }
@@ -116,11 +122,21 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
 
   async function handleShowQR() {
     if (!showQR) {
-      // Start session first if not already running
-      await fetch(`/api/lines/${line.id}/start`, { method: "POST" })
+      try {
+        const res = await fetch(`/api/lines/${line.id}/start`, { method: "POST" })
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}))
+          toast.error((json as { error?: string }).error || "No se pudo iniciar la sesión de WhatsApp")
+          return
+        }
+      } catch {
+        toast.error("Servidor de WhatsApp no disponible")
+        return
+      }
+      setQrData(null)
+      setQrError(null)
     }
     setShowQR(!showQR)
-    if (!showQR) setQrData(null)
   }
 
   if (deleted) return null
@@ -249,7 +265,12 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
       {showQR && (
         <div className="mt-4 pt-4 border-t border-zinc-800 flex flex-col items-center gap-3">
           <div className="w-52 h-52 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-            {qrLoading && !qrData ? (
+            {qrError ? (
+              <div className="flex flex-col items-center gap-2 p-4 text-center">
+                <QrCode className="w-10 h-10 text-red-400" />
+                <p className="text-xs text-red-500">{qrError}</p>
+              </div>
+            ) : qrLoading && !qrData ? (
               <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
             ) : qrData ? (
               <img src={qrData} alt="QR WhatsApp" className="w-full h-full object-contain" />
@@ -258,7 +279,9 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
             )}
           </div>
           <p className="text-zinc-500 text-xs text-center">
-            Abrí WhatsApp → Dispositivos vinculados → Vincular dispositivo → Escaneá este QR
+            {qrError
+              ? "Verificá que el servidor de WhatsApp esté corriendo"
+              : "Abrí WhatsApp → Dispositivos vinculados → Vincular dispositivo → Escaneá este QR"}
           </p>
           <button
             onClick={fetchQR}

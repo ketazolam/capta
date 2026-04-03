@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { X } from "lucide-react"
-import { usePalaceConfig } from "./_context"
 import { useTracking } from "@/lib/templates/tracking-context"
 import { storageGet, storageSet } from "./_utils"
 
@@ -14,8 +13,7 @@ const MESSAGES = [
 ]
 
 export default function WhatsAppButton() {
-  const { whatsappUrl } = usePalaceConfig()
-  const { trackEvent } = useTracking()
+  const { redirectToWhatsApp } = useTracking()
   const [showTooltip, setShowTooltip] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
@@ -47,8 +45,7 @@ export default function WhatsAppButton() {
   }, [dismissCount])
 
   const handleClick = async () => {
-    await trackEvent("wa_click", { source: "Botón flotante" })
-    if (whatsappUrl) window.location.href = whatsappUrl
+    await redirectToWhatsApp()
   }
 
   const handleDismissTooltip = () => {

@@ -62,15 +62,18 @@ export function useTracking() {
   const redirectToWhatsApp = useCallback(async () => {
     try {
       await trackEvent("button_click")
-      if (waUrl) {
-        await trackEvent("conversation_start", { phone: waPhone })
+      // Dedup browser pixel Lead with same eventId as CAPI
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(window as any).fbq("track", "Lead", {}, { eventID: `button_click_${sessionId}` })
       }
     } catch (err) {
       console.error("[tracking] redirect tracking error:", err)
     } finally {
       if (waUrl) window.location.href = waUrl
     }
-  }, [trackEvent, waUrl, waPhone])
+  }, [trackEvent, waUrl, sessionId])
 
   return { trackEvent, redirectToWhatsApp, waUrl, waPhone }
 }

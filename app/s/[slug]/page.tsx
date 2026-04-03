@@ -11,6 +11,7 @@ import type { ComponentType } from "react"
 // Add new templates here as they're created.
 import { WhatsAppRedirectTemplate } from "@/lib/templates/components/whatsapp-redirect"
 import { PalaceCasinoTemplate } from "@/lib/templates/components/palace-casino"
+import MetaPixel from "@/lib/templates/components/shared/MetaPixel"
 
 const TEMPLATE_COMPONENTS: Record<string, ComponentType<TemplateProps>> = {
   "whatsapp-redirect": WhatsAppRedirectTemplate,
@@ -165,18 +166,21 @@ export default async function SmartLinkPage({
   const TemplateComponent = TEMPLATE_COMPONENTS[templateId] ?? TEMPLATE_COMPONENTS["whatsapp-redirect"]
 
   return (
-    <TemplateComponent
-      pageId={page.id}
-      projectId={page.project_id}
-      sessionId={sessionId}
-      waPhone={waPhone}
-      waMessage={waMessage}
-      autoRedirect={page.auto_redirect}
-      lineId={targetLine?.id || null}
-      config={(page.template_config as Record<string, unknown>) ?? {}}
-      fbp={fbp}
-      fbc={fbc}
-    />
+    <>
+      {pixelId && <MetaPixel pixelId={pixelId} pageViewEventId={`pv_${sessionId}`} />}
+      <TemplateComponent
+        pageId={page.id}
+        projectId={page.project_id}
+        sessionId={sessionId}
+        waPhone={waPhone}
+        waMessage={waMessage}
+        autoRedirect={page.auto_redirect}
+        lineId={targetLine?.id || null}
+        config={(page.template_config as Record<string, unknown>) ?? {}}
+        fbp={fbp}
+        fbc={fbc}
+      />
+    </>
   )
 }
 

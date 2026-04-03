@@ -27,11 +27,41 @@ export async function POST(req: Request) {
 
   const supabase = await createServiceClient()
 
-  // 2. Create sale as pending
+  // 2. Infer page_id + visitor data from most recent button_click on this line (best-effort attribution)
+  let inferred_page_id: string | null = null
+  let visitor_fbp: string | null = null
+  let visitor_fbc: string | null = null
+  let visitor_ip: string | null = null
+  let visitor_ua: string | null = null
+  let visitor_session_id: string | null = null
+  if (line_id) {
+    const { data: recentEvent } = await supabase
+      .from("events")
+      .select("page_id, fbp, fbc, ip, user_agent, session_id")
+      .eq("line_id", line_id)
+      .eq("event_type", "button_click")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+    inferred_page_id = recentEvent?.page_id ?? null
+    visitor_fbp = recentEvent?.fbp ?? null
+    visitor_fbc = recentEvent?.fbc ?? null
+    visitor_ip = recentEvent?.ip ?? null
+    visitor_ua = recentEvent?.user_agent ?? null
+    visitor_session_id = recentEvent?.session_id ?? null
+  }
+
+  // 2B. Validate extracted amount — reject if not a positive number
+  if (!extracted.amount || extracted.amount <= 0) {
+    console.warn("[webhook/comprobante] Monto no válido:", extracted.amount, "— guardando como pendiente sin auto-confirm")
+  }
+
+  // 3. Create sale as pending
   const { data: sale, error: saleErr } = await supabase
     .from("sales")
     .insert({
       project_id,
+      page_id: inferred_page_id,
       phone: phone || null,
       line_id: line_id || null,
       amount: extracted.amount,
@@ -39,6 +69,11 @@ export async function POST(req: Request) {
       image_url,
       raw_text: extracted.raw_text,
       status: "pending",
+      visitor_fbp,
+      visitor_fbc,
+      visitor_ip,
+      visitor_ua,
+      visitor_session_id,
     })
     .select("id")
     .single()
@@ -50,8 +85,8 @@ export async function POST(req: Request) {
 
   const saleId = sale.id
 
-  // 3. Auto-confirm if confidence is high
-  const shouldConfirm = auto_confirm && extracted.confidence === "high" && extracted.amount
+  // 3. Auto-confirm if confidence is high AND amount is valid
+  const shouldConfirm = auto_confirm && extracted.confidence === "high" && extracted.amount && extracted.amount > 0
 
   if (!shouldConfirm) {
     return NextResponse.json({
@@ -68,16 +103,13 @@ export async function POST(req: Request) {
   let projectName = ""
   let purchaseEnabled = true
 
-  const { data: project, error: projErr } = await supabase
+  const { data: project } = await supabase
     .from("projects")
     .select("meta_pixel_id, meta_access_token, name, attribution_config")
     .eq("id", project_id)
     .single()
 
-  if (projErr && projErr.code === "42703") {
-    const { data: pBasic } = await supabase.from("projects").select("name").eq("id", project_id).single()
-    projectName = pBasic?.name || ""
-  } else if (project) {
+  if (project) {
     metaPixelId = project.meta_pixel_id
     metaAccessToken = project.meta_access_token
     projectName = project.name
@@ -103,6 +135,7 @@ export async function POST(req: Request) {
   // 5. Confirm sale + fire Meta CAPI if configured
   if (!metaPixelId || !metaAccessToken || !purchaseEnabled) {
     await supabase.from("sales").update({ status: "confirmed" }).eq("id", saleId)
+    await supabase.from("events").insert({ project_id, page_id: inferred_page_id, event_type: "purchase", session_id: saleId, phone: phone || null })
     if (phone) {
       await supabase.rpc("increment_contact_purchase", {
         p_project_id: project_id,
@@ -121,7 +154,11 @@ export async function POST(req: Request) {
     eventId,
     userData: {
       phone,
-      external_id: saleId,
+      external_id: visitor_session_id || saleId,
+      fbp: visitor_fbp || undefined,
+      fbc: visitor_fbc || undefined,
+      client_ip_address: visitor_ip || undefined,
+      client_user_agent: visitor_ua || undefined,
     },
     customData: {
       value: extracted.amount ?? 0,
@@ -134,6 +171,7 @@ export async function POST(req: Request) {
     .from("sales")
     .update({ status: "confirmed", meta_event_sent: true })
     .eq("id", saleId)
+  await supabase.from("events").insert({ project_id, page_id: inferred_page_id, event_type: "purchase", session_id: saleId, phone: phone || null })
 
   if (phone) {
     await supabase.rpc("increment_contact_purchase", {

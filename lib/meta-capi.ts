@@ -75,5 +75,14 @@ async function hashSHA256(value: string): Promise<string> {
 }
 
 function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "")
+  let digits = phone.replace(/\D/g, "")
+  // Argentina E.164: 10 dígitos sin código país → prepend 54
+  if (digits.length === 10 && !digits.startsWith("54")) {
+    digits = "54" + digits
+  }
+  // 11 dígitos con 9 al inicio (celular sin código país) → prepend 54
+  if (digits.length === 11 && digits.startsWith("9")) {
+    digits = "54" + digits
+  }
+  return digits
 }
