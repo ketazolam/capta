@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/server"
 import { headers } from "next/headers"
 import { notFound } from "next/navigation"
+import { after } from "next/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { nanoid } from "nanoid"
 import type { TemplateProps } from "@/lib/templates/types"
@@ -146,20 +147,23 @@ export default async function SmartLinkPage({
   // Track PageView — sessionId doubles as external_id for cross-event linking
   const sessionId = nanoid()
   if (pixelId && accessToken && pageViewEnabled) {
-    await sendMetaEvent({
-      pixelId,
-      accessToken,
-      eventName: "PageView",
-      eventId: `pv_${sessionId}`,
-      userData: {
-        client_ip_address: ip,
-        client_user_agent: userAgent,
-        fbp,
-        fbc,
-        external_id: sessionId,
-      },
-      sourceUrl: `${process.env.NEXT_PUBLIC_APP_URL}/s/${slug}`,
-    })
+    // Fire-and-forget after response is sent — CAPI must not block page render
+    after(() =>
+      sendMetaEvent({
+        pixelId: pixelId!,
+        accessToken: accessToken!,
+        eventName: "PageView",
+        eventId: `pv_${sessionId}`,
+        userData: {
+          client_ip_address: ip,
+          client_user_agent: userAgent,
+          fbp,
+          fbc,
+          external_id: sessionId,
+        },
+        sourceUrl: `${process.env.NEXT_PUBLIC_APP_URL}/s/${slug}`,
+      }).catch((err) => console.error("[SmartLink] PageView CAPI error:", err))
+    )
   }
 
   const { error: eventInsertError } = await supabase.from("events").insert({

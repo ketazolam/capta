@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
+import { isRateLimited } from "@/lib/rate-limit"
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +15,12 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 60 events per minute per IP
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
+    if (isRateLimited(ip, 60, 60_000)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: CORS_HEADERS })
+    }
+
     const body = await req.json()
     let { event_type, project_id, page_id, line_id, session_id, phone, ref_code, fbp, fbc, source_url } = body
     const { tracking_id } = body
@@ -41,7 +48,6 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createServiceClient()
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || ""
     const userAgent = req.headers.get("user-agent") || ""
 
     // Insert event — check for errors
