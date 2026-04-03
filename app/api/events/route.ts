@@ -25,6 +25,14 @@ export async function POST(req: NextRequest) {
       ref_code,
     })
 
+    // Auto-create/update contact on conversation_start
+    if (event_type === "conversation_start" && phone && project_id) {
+      await supabase.from("contacts").upsert(
+        { project_id, phone, last_seen_at: new Date().toISOString() },
+        { onConflict: "project_id,phone", ignoreDuplicates: false }
+      )
+    }
+
     // Get pixel config — try page-level first, then project-level
     let pixelId: string | null = null
     let accessToken: string | null = null
@@ -40,23 +48,39 @@ export async function POST(req: NextRequest) {
     }
 
     // Fall back to project-level config (columns may not exist yet)
+    let metaEnabled = true
     if ((!pixelId || !accessToken) && project_id) {
       try {
         const { data: proj } = await supabase
           .from("projects")
-          .select("meta_pixel_id, meta_access_token")
+          .select("meta_pixel_id, meta_access_token, attribution_config")
           .eq("id", project_id)
           .single()
         if (proj?.meta_pixel_id && proj?.meta_access_token) {
           pixelId = proj.meta_pixel_id
           accessToken = proj.meta_access_token
         }
+        if (proj?.attribution_config?.meta) {
+          metaEnabled = proj.attribution_config.meta[event_type] !== false
+        }
       } catch {
         // columns may not exist yet — ignore
       }
+    } else if (project_id) {
+      // Pixel config came from page-level, still check project attribution config
+      try {
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("attribution_config")
+          .eq("id", project_id)
+          .single()
+        if (proj?.attribution_config?.meta) {
+          metaEnabled = proj.attribution_config.meta[event_type] !== false
+        }
+      } catch { /* ignore */ }
     }
 
-    if (pixelId && accessToken) {
+    if (pixelId && accessToken && metaEnabled) {
       const metaEventMap: Record<string, string> = {
         page_view: "PageView",
         button_click: "Lead",

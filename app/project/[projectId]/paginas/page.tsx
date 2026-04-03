@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
-import { FileText, Plus, Globe } from "lucide-react"
+import { FileText, Globe } from "lucide-react"
 import Link from "next/link"
 import NewPageDialog from "@/components/project/new-page-dialog"
+import DeletePageButton from "@/components/project/delete-page-button"
 
 export default async function PaginasPage({
   params,
@@ -75,6 +76,7 @@ export default async function PaginasPage({
                   >
                     Ver
                   </a>
+                  <DeletePageButton pageId={page.id} pageName={page.name} />
                 </div>
               </div>
             </div>

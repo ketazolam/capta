@@ -80,24 +80,38 @@ export default async function SmartLinkPage({
     )
   }
 
-  // Resolve pixel config: page-level first, then project-level
+  // Resolve pixel config + attribution config: page-level first, then project-level
   let pixelId = page.meta_pixel_id
   let accessToken = page.meta_access_token
+  let pageViewEnabled = true
   if (!pixelId || !accessToken) {
     const { data: proj } = await supabase
       .from("projects")
-      .select("meta_pixel_id, meta_access_token")
+      .select("meta_pixel_id, meta_access_token, attribution_config")
       .eq("id", page.project_id)
       .single()
     if (proj?.meta_pixel_id && proj?.meta_access_token) {
       pixelId = proj.meta_pixel_id
       accessToken = proj.meta_access_token
     }
+    if (proj?.attribution_config?.meta) {
+      pageViewEnabled = proj.attribution_config.meta.page_view !== false
+    }
+  } else {
+    // Pixel from page-level; still check project attribution config
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("attribution_config")
+      .eq("id", page.project_id)
+      .single()
+    if (proj?.attribution_config?.meta) {
+      pageViewEnabled = proj.attribution_config.meta.page_view !== false
+    }
   }
 
   // Track PageView
   const sessionId = nanoid()
-  if (pixelId && accessToken) {
+  if (pixelId && accessToken && pageViewEnabled) {
     await sendMetaEvent({
       pixelId,
       accessToken,

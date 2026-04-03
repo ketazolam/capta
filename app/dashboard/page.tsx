@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Plus, Layers, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import NewProjectDialog from "@/components/project/new-project-dialog"
+import DeleteProjectButton from "@/components/project/delete-project-button"
 import { signOut } from "@/lib/supabase/actions"
 
 export default async function DashboardPage() {
@@ -73,25 +74,26 @@ export default async function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => (
-              <Link
-                key={project.id}
-                href={`/project/${project.id}/analytics`}
-                className="group bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 hover:bg-zinc-800/50 transition-all"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <span className="text-emerald-400 font-bold text-sm">
-                      {project.name.charAt(0).toUpperCase()}
-                    </span>
+              <div key={project.id} className="relative group bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 hover:bg-zinc-800/50 transition-all">
+                <Link href={`/project/${project.id}/analytics`} className="block">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                      <span className="text-emerald-400 font-bold text-sm">
+                        {project.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
                   </div>
+                  <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors">
+                    {project.name}
+                  </h3>
+                  <p className="text-zinc-600 text-xs mt-1">
+                    {new Date(project.created_at).toLocaleDateString("es-AR")}
+                  </p>
+                </Link>
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DeleteProjectButton projectId={project.id} projectName={project.name} />
                 </div>
-                <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors">
-                  {project.name}
-                </h3>
-                <p className="text-zinc-600 text-xs mt-1">
-                  {new Date(project.created_at).toLocaleDateString("es-AR")}
-                </p>
-              </Link>
+              </div>
             ))}
           </div>
         )}

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 
 interface Props {
   pageId: string
@@ -29,25 +28,30 @@ export default function SmartLinkClient({
     : null
 
   async function trackAndRedirect() {
-    const supabase = createClient()
-    await supabase.from("events").insert({
-      project_id: projectId,
-      page_id: pageId,
-      line_id: lineId,
-      event_type: "button_click",
-      session_id: sessionId,
-      user_agent: navigator.userAgent,
-    })
-
-    // Small delay so event registers, then track conversation start + redirect
-    if (waUrl) {
-      await supabase.from("events").insert({
+    await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         project_id: projectId,
         page_id: pageId,
         line_id: lineId,
-        event_type: "conversation_start",
+        event_type: "button_click",
         session_id: sessionId,
-        user_agent: navigator.userAgent,
+      }),
+    })
+
+    if (waUrl) {
+      await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: projectId,
+          page_id: pageId,
+          line_id: lineId,
+          event_type: "conversation_start",
+          session_id: sessionId,
+          phone: waPhone,
+        }),
       })
       window.location.href = waUrl
     }

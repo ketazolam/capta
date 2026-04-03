@@ -22,11 +22,10 @@ export default async function ProjectLayout({
 
   if (!project) redirect("/dashboard")
 
-  const { data: creditsRow } = await supabase
-    .from("credits")
-    .select("balance")
-    .eq("org_id", project.org_id)
-    .single()
+  const [{ data: creditsRow }, { data: allProjects }] = await Promise.all([
+    supabase.from("credits").select("balance").eq("org_id", project.org_id).single(),
+    supabase.from("projects").select("id, name").eq("org_id", project.org_id).order("created_at", { ascending: false }),
+  ])
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
@@ -34,6 +33,7 @@ export default async function ProjectLayout({
         projectId={projectId}
         projectName={project.name}
         credits={creditsRow?.balance ?? 0}
+        allProjects={allProjects ?? []}
       />
       <main className="flex-1 overflow-y-auto">
         {children}

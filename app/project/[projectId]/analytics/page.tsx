@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
-import { BarChart2 } from "lucide-react"
+import { BarChart2, FileText, Settings } from "lucide-react"
 import Link from "next/link"
+import AnalyticsChart from "@/components/project/analytics-chart"
 
 function getDateRange(range: string): Date {
   const now = new Date()
@@ -46,6 +47,25 @@ export default async function AnalyticsPage({
   events?.forEach((e) => {
     if (e.event_type in counts) counts[e.event_type as keyof typeof counts]++
   })
+
+  // Build daily chart data
+  const dayMap: Record<string, typeof counts> = {}
+  // Seed every day in range with zeros
+  const numDays = range === "today" ? 1 : range === "15d" ? 15 : range === "30d" ? 30 : 90
+  for (let i = numDays - 1; i >= 0; i--) {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    dayMap[key] = { page_view: 0, button_click: 0, conversation_start: 0, purchase: 0 }
+  }
+  events?.forEach((e) => {
+    const key = e.created_at.slice(0, 10)
+    if (dayMap[key] && e.event_type in dayMap[key]) {
+      dayMap[key][e.event_type as keyof typeof counts]++
+    }
+  })
+  const chartData = Object.entries(dayMap).map(([date, vals]) => ({ date, ...vals }))
 
   // Get total sales amount for the period
   const { data: sales } = await supabase
@@ -95,10 +115,26 @@ export default async function AnalyticsPage({
       </div>
 
       {!hasData ? (
-        <div className="text-center py-24 border border-dashed border-zinc-800 rounded-xl">
+        <div className="text-center py-20 border border-dashed border-zinc-800 rounded-xl">
           <BarChart2 className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
           <h3 className="text-zinc-400 font-medium">Esperando datos de eventos</h3>
-          <p className="text-zinc-600 text-sm mt-1">Recibí tráfico para ver analytics</p>
+          <p className="text-zinc-600 text-sm mt-1 mb-6">Publicá una página y empezá a recibir tráfico para ver analytics</p>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href={`/project/${projectId}/paginas`}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              Crear una página
+            </Link>
+            <Link
+              href={`/project/${projectId}/settings/general`}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              Configurar Meta Pixel
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-6">
@@ -131,6 +167,9 @@ export default async function AnalyticsPage({
               )
             })}
           </div>
+
+          {/* Time-series chart */}
+          <AnalyticsChart data={chartData} />
         </div>
       )}
     </div>

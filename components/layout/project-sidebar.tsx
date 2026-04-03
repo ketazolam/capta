@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   BarChart2,
   ShoppingBag,
@@ -13,8 +13,16 @@ import {
   ChevronDown,
   Zap,
   ArrowLeft,
+  Check,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const navItems = [
   { label: "Analytics", href: "analytics", icon: BarChart2 },
@@ -30,24 +38,47 @@ interface Props {
   projectId: string
   projectName: string
   credits: number
+  allProjects: { id: string; name: string }[]
 }
 
-export default function ProjectSidebar({ projectId, projectName, credits }: Props) {
+export default function ProjectSidebar({ projectId, projectName, credits, allProjects }: Props) {
   const pathname = usePathname()
+  const router = useRouter()
 
   return (
     <aside className="w-56 flex flex-col border-r border-zinc-800 bg-[#0d0d0d] shrink-0">
       {/* Project selector */}
       <div className="p-3 border-b border-zinc-800">
-        <button className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-zinc-800 transition-colors text-left">
-          <div className="w-7 h-7 rounded-md bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center shrink-0">
-            <span className="text-emerald-400 font-bold text-xs">
-              {projectName.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <span className="text-sm font-medium text-white truncate flex-1">{projectName}</span>
-          <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-zinc-800 transition-colors text-left">
+            <div className="w-7 h-7 rounded-md bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center shrink-0">
+              <span className="text-emerald-400 font-bold text-xs">
+                {projectName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-white truncate flex-1">{projectName}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            {allProjects.map((p) => (
+              <DropdownMenuItem
+                key={p.id}
+                onClick={() => router.push(`/project/${p.id}/analytics`)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <div className="w-5 h-5 rounded bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <span className="text-emerald-400 font-bold text-xs">{p.name.charAt(0).toUpperCase()}</span>
+                </div>
+                <span className="flex-1 truncate">{p.name}</span>
+                {p.id === projectId && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+              </DropdownMenuItem>
+            ))}
+            {allProjects.length > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuItem onClick={() => router.push("/dashboard")} className="text-zinc-400 cursor-pointer">
+              Ver todos los proyectos
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Navigation */}

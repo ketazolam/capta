@@ -1,7 +1,25 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { MoreHorizontal, Zap, QrCode, RefreshCw, Loader2 } from "lucide-react"
+import { MoreHorizontal, Zap, QrCode, RefreshCw, Loader2, Pencil, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Line {
   id: string
@@ -19,6 +37,47 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
   const [qrData, setQrData] = useState<string | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
   const [starting, setStarting] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [newName, setNewName] = useState(line.name)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+
+  async function handleRename() {
+    if (!newName.trim() || newName === line.name) {
+      setRenaming(false)
+      return
+    }
+    try {
+      const res = await fetch(`/api/lines/${line.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim() }),
+      })
+      if (!res.ok) throw new Error()
+      setLine((l) => ({ ...l, name: newName.trim() }))
+      toast.success("Línea renombrada")
+    } catch {
+      toast.error("Error al renombrar")
+      setNewName(line.name)
+    }
+    setRenaming(false)
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/lines/${line.id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error()
+      toast.success("Línea eliminada")
+      setDeleted(true)
+    } catch {
+      toast.error("Error al eliminar la línea")
+    } finally {
+      setDeleting(false)
+      setShowDeleteDialog(false)
+    }
+  }
 
   const fetchQR = useCallback(async () => {
     setQrLoading(true)
@@ -64,6 +123,8 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
     if (!showQR) setQrData(null)
   }
 
+  if (deleted) return null
+
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
       <div className="flex items-center justify-between">
@@ -74,7 +135,21 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
               : "bg-zinc-600"
           }`} />
           <div>
-            <p className="text-white font-medium text-sm">{line.name}</p>
+            {renaming ? (
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onBlur={handleRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRename()
+                  if (e.key === "Escape") { setRenaming(false); setNewName(line.name) }
+                }}
+                className="bg-zinc-800 border border-zinc-700 rounded px-2 py-0.5 text-white text-sm w-36 focus:outline-none focus:border-emerald-500"
+              />
+            ) : (
+              <p className="text-white font-medium text-sm">{line.name}</p>
+            )}
             <p className="text-zinc-500 text-xs">
               {line.phone_number || "No conectado"}
               {line.is_incognito && (
@@ -126,9 +201,48 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
             </button>
           )}
 
-          <button className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors">
-            <MoreHorizontal className="w-4 h-4 text-zinc-500" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors">
+              <MoreHorizontal className="w-4 h-4 text-zinc-500" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setNewName(line.name); setRenaming(true) }}>
+                <Pencil className="w-3.5 h-3.5 mr-2" />
+                Renombrar
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-red-400 focus:text-red-400"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                Eliminar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">¿Eliminar línea?</AlertDialogTitle>
+                <AlertDialogDescription className="text-zinc-400">
+                  Se eliminará <span className="text-white font-medium">{line.name}</span> y se desconectará el número de WhatsApp. Esta acción no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700">
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="bg-red-600 hover:bg-red-500 text-white"
+                >
+                  {deleting ? "Eliminando..." : "Eliminar"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 

@@ -22,10 +22,11 @@ export async function POST(req: Request) {
   let metaPixelId: string | null = null
   let metaAccessToken: string | null = null
   let projectName = ""
+  let purchaseEnabled = true
 
   const { data: project, error: projErr } = await supabase
     .from("projects")
-    .select("meta_pixel_id, meta_access_token, name")
+    .select("meta_pixel_id, meta_access_token, name, attribution_config")
     .eq("id", projectId)
     .single()
 
@@ -37,6 +38,9 @@ export async function POST(req: Request) {
     metaPixelId = project.meta_pixel_id
     metaAccessToken = project.meta_access_token
     projectName = project.name
+    if (project.attribution_config?.meta) {
+      purchaseEnabled = project.attribution_config.meta.purchase !== false
+    }
   }
 
   // If no project-level config, check if we can get it from a page in this project
@@ -54,9 +58,24 @@ export async function POST(req: Request) {
     }
   }
 
-  if (!metaPixelId || !metaAccessToken) {
-    // No Meta config — just mark sale as confirmed
+  if (!metaPixelId || !metaAccessToken || !purchaseEnabled) {
+    // No Meta config or purchase event disabled — just mark sale as confirmed
     await supabase.from("sales").update({ status: "confirmed" }).eq("id", saleId)
+    if (phone && projectId) {
+      const { data: existing } = await supabase
+        .from("contacts")
+        .select("id, purchase_count, total_purchases")
+        .eq("project_id", projectId)
+        .eq("phone", phone)
+        .single()
+      if (existing) {
+        await supabase.from("contacts").update({
+          purchase_count: (existing.purchase_count || 0) + 1,
+          total_purchases: (Number(existing.total_purchases) || 0) + (amount || 0),
+          last_seen_at: new Date().toISOString(),
+        }).eq("id", existing.id)
+      }
+    }
     return NextResponse.json({ ok: true, capi: false })
   }
 
@@ -77,6 +96,23 @@ export async function POST(req: Request) {
 
   // Mark sale as confirmed
   await supabase.from("sales").update({ status: "confirmed", meta_event_sent: true }).eq("id", saleId)
+
+  // Update contact aggregates
+  if (phone && projectId) {
+    const { data: existing } = await supabase
+      .from("contacts")
+      .select("id, purchase_count, total_purchases")
+      .eq("project_id", projectId)
+      .eq("phone", phone)
+      .single()
+    if (existing) {
+      await supabase.from("contacts").update({
+        purchase_count: (existing.purchase_count || 0) + 1,
+        total_purchases: (Number(existing.total_purchases) || 0) + (amount || 0),
+        last_seen_at: new Date().toISOString(),
+      }).eq("id", existing.id)
+    }
+  }
 
   return NextResponse.json({ ok: true, capi: true, eventId })
 }
