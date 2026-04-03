@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
       const metaEventMap: Record<string, string> = {
         button_click: "Lead",
         purchase: "Purchase",
+        view_content: "ViewContent",  // Scroll 50% — contenido visto, útil para retargeting
       }
 
       const metaEventName = metaEventMap[event_type]
