@@ -24,6 +24,7 @@ interface Page {
   page_type: string | null
   external_url: string | null
   tracking_id: string | null
+  custom_domain: string | null
 }
 
 const templates = getAllTemplates()
@@ -62,6 +63,7 @@ export default function PageEditorPage() {
         tiktok_pixel_id: page.tiktok_pixel_id,
         tiktok_access_token: page.tiktok_access_token,
         is_published: page.is_published,
+        custom_domain: page.custom_domain || null,
       })
       .eq("id", pageId)
     setSaving(false)
@@ -182,6 +184,23 @@ export default function PageEditorPage() {
                 >
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${page.is_published ? "translate-x-5" : "translate-x-0.5"}`} />
                 </button>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5" />
+                Dominio Personalizado
+              </h4>
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Dominio (sin https://)</label>
+                <input
+                  value={page.custom_domain || ""}
+                  onChange={(e) => setPage({ ...page, custom_domain: e.target.value.trim().toLowerCase() || null })}
+                  placeholder="palace-casino.com.ar"
+                  className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
+                />
+                <p className="text-xs text-zinc-600">Apuntá un CNAME a <code className="text-zinc-400">cname.vercel-dns.com</code> en tu DNS y avisale a Tomás para agregar el dominio en Vercel.</p>
               </div>
             </section>
 
