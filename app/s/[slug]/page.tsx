@@ -10,9 +10,11 @@ import type { ComponentType } from "react"
 // but cannot use getTemplate() from a registry that imports "use client" modules.
 // Add new templates here as they're created.
 import { WhatsAppRedirectTemplate } from "@/lib/templates/components/whatsapp-redirect"
+import { PalaceCasinoTemplate } from "@/lib/templates/components/palace-casino"
 
 const TEMPLATE_COMPONENTS: Record<string, ComponentType<TemplateProps>> = {
   "whatsapp-redirect": WhatsAppRedirectTemplate,
+  "palace-casino": PalaceCasinoTemplate,
 }
 
 // Crawler/bot user agents — skip tracking for these

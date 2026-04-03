@@ -22,24 +22,19 @@ export default async function AnalyticsPage({
   searchParams,
 }: {
   params: Promise<{ projectId: string }>
-  searchParams: Promise<{ range?: string }>
+  searchParams: Promise<{ range?: string; page_id?: string }>
 }) {
   const { projectId } = await params
   const sp = await searchParams
   const range = sp.range || "30d"
+  const pageFilter = sp.page_id || null
   const supabase = await createClient()
 
   const since = getDateRange(range)
   const numDays = range === "today" ? 1 : range === "15d" ? 15 : range === "30d" ? 30 : 90
 
-  const counts = {
-    page_view: 0,
-    button_click: 0,
-    conversation_start: 0,
-    purchase: 0,
-  }
+  const counts = { page_view: 0, button_click: 0, conversation_start: 0, purchase: 0 }
 
-  // Seed dayMap with zeros for every day in range (UTC-aligned)
   const dayMap: Record<string, typeof counts> = {}
   for (let i = numDays - 1; i >= 0; i--) {
     const d = new Date()
@@ -49,17 +44,26 @@ export default async function AnalyticsPage({
     dayMap[key] = { page_view: 0, button_click: 0, conversation_start: 0, purchase: 0 }
   }
 
-  // Use RPC for pre-aggregated data (no 1000-row truncation)
+  // Fetch pages for the filter dropdown
+  const { data: pages } = await supabase
+    .from("pages")
+    .select("id, name, slug")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+
+  // RPC with optional page_id filter
+  const rpcParams: Record<string, unknown> = {
+    p_project_id: projectId,
+    p_since: since.toISOString(),
+  }
+  if (pageFilter) rpcParams.p_page_id = pageFilter
+
   const { data: rpcData, error: rpcError } = await supabase
-    .rpc("get_analytics_summary", {
-      p_project_id: projectId,
-      p_since: since.toISOString(),
-    })
+    .rpc("get_analytics_summary", rpcParams)
 
   if (rpcData && !rpcError) {
-    // RPC returns { event_type, event_date, event_count }
     for (const row of rpcData) {
-      const key = row.event_date as string // already "YYYY-MM-DD"
+      const key = row.event_date as string
       if (row.event_type in counts) {
         counts[row.event_type as keyof typeof counts] += row.event_count
       }
@@ -68,15 +72,15 @@ export default async function AnalyticsPage({
       }
     }
   } else {
-    // Fallback: direct query with explicit limit if RPC not yet deployed
     if (rpcError) console.error("[Analytics] RPC error, falling back:", rpcError)
-    const { data: events } = await supabase
+    let q = supabase
       .from("events")
       .select("event_type, created_at")
       .eq("project_id", projectId)
       .gte("created_at", since.toISOString())
       .limit(50000)
-
+    if (pageFilter) q = q.eq("page_id", pageFilter)
+    const { data: events } = await q
     events?.forEach((e) => {
       if (e.event_type in counts) counts[e.event_type as keyof typeof counts]++
       const key = e.created_at.slice(0, 10)
@@ -88,25 +92,25 @@ export default async function AnalyticsPage({
 
   const chartData = Object.entries(dayMap).map(([date, vals]) => ({ date, ...vals }))
 
-  // Get total sales amount for the period
-  const { data: sales } = await supabase
+  let salesQ = supabase
     .from("sales")
     .select("amount")
     .eq("project_id", projectId)
     .eq("status", "confirmed")
     .gte("created_at", since.toISOString())
+  if (pageFilter) salesQ = salesQ.eq("page_id", pageFilter)
+  const { data: sales } = await salesQ
 
   const totalRevenue = sales?.reduce((sum, s) => sum + (Number(s.amount) || 0), 0) ?? 0
 
   const funnel = [
-    { label: "Visitas", value: counts.page_view, color: "bg-blue-500" },
-    { label: "Clics", value: counts.button_click, color: "bg-violet-500" },
-    { label: "Mensajes", value: counts.conversation_start, color: "bg-yellow-500" },
-    { label: "Ventas", value: counts.purchase, color: "bg-emerald-500" },
+    { label: "Visitas",   value: counts.page_view,         color: "bg-blue-500" },
+    { label: "Clics",     value: counts.button_click,       color: "bg-violet-500" },
+    { label: "Mensajes",  value: counts.conversation_start, color: "bg-yellow-500" },
+    { label: "Ventas",    value: counts.purchase,           color: "bg-emerald-500" },
   ]
 
   const hasData = Object.values(counts).some((v) => v > 0)
-
   const ranges = [
     { label: "Hoy", value: "today" },
     { label: "15d", value: "15d" },
@@ -114,24 +118,62 @@ export default async function AnalyticsPage({
     { label: "90d", value: "90d" },
   ]
 
+  const buildUrl = (extra: Record<string, string>) => {
+    const p = new URLSearchParams({ range, ...(pageFilter && { page_id: pageFilter }), ...extra })
+    return `/project/${projectId}/analytics?${p}`
+  }
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-xl font-bold text-white">Analytics</h2>
-        <div className="flex gap-1">
-          {ranges.map((r) => (
-            <Link
-              key={r.value}
-              href={`/project/${projectId}/analytics?range=${r.value}`}
-              className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                range === r.value
-                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-medium"
-                  : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
-              }`}
-            >
-              {r.label}
-            </Link>
-          ))}
+
+        <div className="flex gap-2">
+          {/* Page filter */}
+          {pages && pages.length > 1 && (
+            <div className="flex gap-1 border-r border-zinc-800 pr-2">
+              <Link
+                href={buildUrl({ page_id: "" })}
+                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                  !pageFilter
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-medium"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                }`}
+              >
+                Todas
+              </Link>
+              {pages.map((p) => (
+                <Link
+                  key={p.id}
+                  href={buildUrl({ page_id: p.id })}
+                  className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                    pageFilter === p.id
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-medium"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  }`}
+                >
+                  {p.name || p.slug}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Range filter */}
+          <div className="flex gap-1">
+            {ranges.map((r) => (
+              <Link
+                key={r.value}
+                href={buildUrl({ range: r.value })}
+                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                  range === r.value
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-medium"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                }`}
+              >
+                {r.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -159,7 +201,6 @@ export default async function AnalyticsPage({
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Revenue card */}
           {totalRevenue > 0 && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <p className="text-zinc-500 text-sm mb-1">Facturación confirmada</p>
@@ -170,7 +211,6 @@ export default async function AnalyticsPage({
             </div>
           )}
 
-          {/* Funnel cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {funnel.map((item) => {
               const prev = funnel[funnel.indexOf(item) - 1]
@@ -189,7 +229,6 @@ export default async function AnalyticsPage({
             })}
           </div>
 
-          {/* Time-series chart */}
           <AnalyticsChart data={chartData} />
         </div>
       )}

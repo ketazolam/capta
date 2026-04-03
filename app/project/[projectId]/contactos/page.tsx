@@ -10,47 +10,102 @@ export default async function ContactosPage({
   searchParams,
 }: {
   params: Promise<{ projectId: string }>
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; q?: string; sort?: string }>
 }) {
   const { projectId } = await params
   const sp = await searchParams
   const page = Math.max(1, parseInt(sp.page || "1"))
+  const q = sp.q?.trim() || ""
+  const sort = sp.sort || "purchases"
   const supabase = await createClient()
 
-  const [{ count }, { data: contacts }] = await Promise.all([
-    supabase
-      .from("contacts")
-      .select("*", { count: "exact", head: true })
-      .eq("project_id", projectId),
-    supabase
-      .from("contacts")
-      .select("*")
-      .eq("project_id", projectId)
-      .order("total_purchases", { ascending: false })
-      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
-  ])
+  const orderCol = sort === "recent" ? "last_seen_at" : "total_purchases"
+
+  let countQ = supabase
+    .from("contacts")
+    .select("*", { count: "exact", head: true })
+    .eq("project_id", projectId)
+
+  let dataQ = supabase
+    .from("contacts")
+    .select("*")
+    .eq("project_id", projectId)
+    .order(orderCol, { ascending: false })
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+
+  if (q) {
+    const likeQ = `%${q}%`
+    countQ = countQ.or(`phone.ilike.${likeQ},name.ilike.${likeQ}`)
+    dataQ = dataQ.or(`phone.ilike.${likeQ},name.ilike.${likeQ}`)
+  }
+
+  const [{ count }, { data: contacts }] = await Promise.all([countQ, dataQ])
 
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
   const baseUrl = `/project/${projectId}/contactos`
+  const buildUrl = (extra: Record<string, string>) => {
+    const p = new URLSearchParams({ sort, ...(q && { q }), ...extra })
+    return `${baseUrl}?${p}`
+  }
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">Contactos</h2>
         <span className="text-zinc-500 text-sm">{count ?? 0} contactos</span>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {/* Sort */}
+        <div className="flex gap-1">
+          {[["purchases", "Mayor gasto"], ["recent", "Más recientes"]].map(([val, label]) => (
+            <Link
+              key={val}
+              href={buildUrl({ sort: val, page: "1" })}
+              className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                sort === val
+                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-medium"
+                  : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Search */}
+        <form method="get" action={baseUrl} className="flex gap-1">
+          <input type="hidden" name="sort" value={sort} />
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Buscar nombre o teléfono..."
+            className="px-3 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 w-52"
+          />
+        </form>
       </div>
 
       {!contacts || contacts.length === 0 ? (
         <div className="text-center py-24 border border-dashed border-zinc-800 rounded-xl">
           <Users className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-          <h3 className="text-zinc-400 font-medium">No hay contactos</h3>
-          <p className="text-zinc-600 text-sm mt-1 mb-4">Los contactos se crean automáticamente cuando alguien inicia una conversación desde tus Smart Links</p>
-          <Link
-            href={`/project/${projectId}/paginas`}
-            className="text-sm text-emerald-400 hover:text-emerald-300"
-          >
-            Crear una página →
-          </Link>
+          <h3 className="text-zinc-400 font-medium">
+            {q ? `Sin resultados para "${q}"` : "No hay contactos"}
+          </h3>
+          <p className="text-zinc-600 text-sm mt-1 mb-4">
+            {q
+              ? "Probá con otro término de búsqueda"
+              : "Los contactos se crean automáticamente cuando alguien inicia una conversación"}
+          </p>
+          {!q && (
+            <Link
+              href={`/project/${projectId}/paginas`}
+              className="text-sm text-emerald-400 hover:text-emerald-300"
+            >
+              Crear una página →
+            </Link>
+          )}
         </div>
       ) : (
         <>
@@ -84,7 +139,11 @@ export default async function ContactosPage({
               </tbody>
             </table>
           </div>
-          <Pagination currentPage={page} totalPages={totalPages} baseUrl={baseUrl} />
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            baseUrl={`${baseUrl}?sort=${sort}${q ? `&q=${q}` : ""}&`}
+          />
         </>
       )}
     </div>

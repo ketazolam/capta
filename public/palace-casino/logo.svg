@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6B21A8"/>
+      <stop offset="50%" style="stop-color:#581C87"/>
+      <stop offset="100%" style="stop-color:#3B0764"/>
+    </linearGradient>
+    <linearGradient id="spadeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF"/>
+      <stop offset="100%" style="stop-color:#E8E8E8"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="innerGlow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Background rounded square -->
+  <rect x="5" y="5" width="90" height="90" rx="18" ry="18" fill="url(#bgGradient)"/>
+  
+  <!-- Subtle inner border -->
+  <rect x="8" y="8" width="84" height="84" rx="15" ry="15" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  
+  <!-- Spade symbol -->
+  <g transform="translate(50, 52)" filter="url(#shadow)">
+    <!-- Main spade body -->
+    <path d="M0,-32 
+             C-4,-28 -24,-12 -24,6 
+             C-24,18 -14,26 -4,26 
+             C-2,26 -1,25 0,24
+             C1,25 2,26 4,26 
+             C14,26 24,18 24,6 
+             C24,-12 4,-28 0,-32 Z" 
+          fill="url(#spadeGradient)"/>
+    
+    <!-- Spade stem -->
+    <path d="M-8,22 
+             C-8,28 -12,36 -14,38
+             L14,38
+             C12,36 8,28 8,22
+             C4,24 -4,24 -8,22 Z" 
+          fill="url(#spadeGradient)"/>
+  </g>
+</svg>
