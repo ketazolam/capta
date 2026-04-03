@@ -132,7 +132,7 @@ export default async function ContactosPage({
                     </td>
                     <td className="px-4 py-3 text-zinc-400">{contact.purchase_count}</td>
                     <td className="px-4 py-3 text-zinc-500 text-xs">
-                      {new Date(contact.last_seen_at).toLocaleDateString("es-AR")}
+                      {contact.last_seen_at ? new Date(contact.last_seen_at).toLocaleDateString("es-AR") : "—"}
                     </td>
                   </tr>
                 ))}

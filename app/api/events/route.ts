@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error("[Events API] insert error:", insertError)
-      return NextResponse.json({ error: "Failed to insert event" }, { status: 500 })
+      return NextResponse.json({ error: "Failed to insert event" }, { status: 500, headers: CORS_HEADERS })
     }
 
     // Auto-create/update contact on conversation_start

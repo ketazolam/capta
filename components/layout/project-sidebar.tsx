@@ -9,7 +9,6 @@ import {
   FileText,
   Smartphone,
   Settings,
-  BookOpen,
   ChevronDown,
   Zap,
   ArrowLeft,
@@ -31,7 +30,6 @@ const navItems = [
   { label: "Páginas", href: "paginas", icon: FileText },
   { label: "Líneas", href: "lineas", icon: Smartphone },
   { label: "Configuración", href: "settings/general", icon: Settings },
-  { label: "Guías", href: "guias", icon: BookOpen },
 ]
 
 interface Props {

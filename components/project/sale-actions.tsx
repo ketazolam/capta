@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Check, X, Loader2, Image as ImageIcon, Scan } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 interface SaleActionsProps {
   saleId: string
@@ -47,7 +48,7 @@ export default function SaleActions({ saleId, projectId, phone, amount, imageUrl
       if (!res.ok) throw new Error("Error al actualizar")
       router.refresh()
     } catch {
-      alert("Error al actualizar la venta")
+      toast.error("Error al actualizar la venta")
     } finally {
       setLoading(null)
     }

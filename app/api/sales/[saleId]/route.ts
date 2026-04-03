@@ -41,14 +41,14 @@ export async function PATCH(
 
     // If confirming, fire Meta CAPI Purchase + update contact
     if (status === "confirmed" && project_id) {
-      // Get sale record for attribution + double-send guard + visitor data
+      // Get sale record — check previous status to avoid double-processing
       const { data: saleRecord } = await supabase
         .from("sales")
-        .select("page_id, amount, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+        .select("page_id, amount, status, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
         .eq("id", saleId)
         .single()
       const salePageId = saleRecord?.page_id ?? null
-      const alreadySentMeta = saleRecord?.meta_event_sent === true
+      const wasAlreadyConfirmed = saleRecord?.status === "confirmed"
 
       // Get pixel config
       const { data: proj } = await supabase
@@ -61,50 +61,58 @@ export async function PATCH(
       const pixelId = proj?.meta_pixel_id
       const accessToken = proj?.meta_access_token
 
-      if (pixelId && accessToken && purchaseEnabled && !alreadySentMeta) {
-        // Prefer visitor data captured at click time over current request (admin IP/UA)
-        const ip = saleRecord?.visitor_ip || req.headers.get("x-forwarded-for")?.split(",")[0] || ""
-        const userAgent = saleRecord?.visitor_ua || req.headers.get("user-agent") || ""
-        await sendMetaEvent({
-          pixelId,
-          accessToken,
-          eventName: "Purchase",
-          eventId: `purchase_${saleId}`,
-          userData: {
-            phone: phone || undefined,
-            client_ip_address: ip || undefined,
-            client_user_agent: userAgent || undefined,
-            external_id: saleRecord?.visitor_session_id || saleId,
-            fbp: saleRecord?.visitor_fbp || undefined,
-            fbc: saleRecord?.visitor_fbc || undefined,
-          },
-          customData: {
-            value: amount ?? saleRecord?.amount ?? 0,
-            currency: "ARS",
-            content_name: proj?.name || "",
-          },
-        })
+      // Atomic CAPI guard: only send if not already sent (prevents race condition)
+      if (pixelId && accessToken && purchaseEnabled && !saleRecord?.meta_event_sent) {
+        const { data: claimed } = await supabase
+          .from("sales")
+          .update({ meta_event_sent: true })
+          .eq("id", saleId)
+          .or("meta_event_sent.is.null,meta_event_sent.eq.false")
+          .select("id")
+          .single()
 
-        // Mark meta_event_sent
-        await supabase.from("sales").update({ meta_event_sent: true }).eq("id", saleId)
+        if (claimed) {
+          const ip = saleRecord?.visitor_ip || req.headers.get("x-forwarded-for")?.split(",")[0] || ""
+          const userAgent = saleRecord?.visitor_ua || req.headers.get("user-agent") || ""
+          await sendMetaEvent({
+            pixelId,
+            accessToken,
+            eventName: "Purchase",
+            eventId: `purchase_${saleId}`,
+            userData: {
+              phone: phone || undefined,
+              client_ip_address: ip || undefined,
+              client_user_agent: userAgent || undefined,
+              external_id: saleRecord?.visitor_session_id || saleId,
+              fbp: saleRecord?.visitor_fbp || undefined,
+              fbc: saleRecord?.visitor_fbc || undefined,
+            },
+            customData: {
+              value: amount ?? saleRecord?.amount ?? 0,
+              currency: "ARS",
+              content_name: proj?.name || "",
+            },
+          })
+        }
       }
 
-        // Insert purchase event for analytics funnel
-      await supabase.from("events").insert({
-        project_id,
-        page_id: salePageId,
-        event_type: "purchase",
-        session_id: saleId,
-        phone: phone || null,
-      })
-
-      // Update contact aggregate
-      if (phone) {
-        await supabase.rpc("increment_contact_purchase", {
-          p_project_id: project_id,
-          p_phone: phone,
-          p_amount: amount || 0,
+      // Insert purchase event + update contact only if this is a fresh confirm (not double-confirm)
+      if (!wasAlreadyConfirmed) {
+        await supabase.from("events").insert({
+          project_id,
+          page_id: salePageId,
+          event_type: "purchase",
+          session_id: saleId,
+          phone: phone || null,
         })
+
+        if (phone) {
+          await supabase.rpc("increment_contact_purchase", {
+            p_project_id: project_id,
+            p_phone: phone,
+            p_amount: amount || 0,
+          })
+        }
       }
     }
 

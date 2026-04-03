@@ -75,6 +75,7 @@ export default function NewPageDialog({ projectId }: { projectId: string }) {
         return
       }
       toast.success("Página externa registrada")
+      setLoading(false)
       setOpen(false)
       handleReset()
       router.push(`/project/${projectId}/paginas/${data.id}`)

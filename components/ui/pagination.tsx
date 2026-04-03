@@ -10,8 +10,9 @@ interface Props {
 export default function Pagination({ currentPage, totalPages, baseUrl }: Props) {
   if (totalPages <= 1) return null
 
-  const prev = currentPage > 1 ? `${baseUrl}?page=${currentPage - 1}` : null
-  const next = currentPage < totalPages ? `${baseUrl}?page=${currentPage + 1}` : null
+  // baseUrl is expected to end with "&" (e.g. "...ventas?status=all&range=all&")
+  const prev = currentPage > 1 ? `${baseUrl}page=${currentPage - 1}` : null
+  const next = currentPage < totalPages ? `${baseUrl}page=${currentPage + 1}` : null
 
   return (
     <div className="flex items-center justify-center gap-3 mt-6">
