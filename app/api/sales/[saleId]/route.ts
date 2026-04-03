@@ -25,9 +25,10 @@ export async function PATCH(
     const supabase = await createServiceClient()
 
     // Read current sale state BEFORE updating (to detect double-confirm)
+    // Include project data via FK to avoid a separate round-trip later
     const { data: saleRecord } = await supabase
       .from("sales")
-      .select("page_id, amount, status, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+      .select("page_id, amount, status, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, projects(meta_pixel_id, meta_access_token, name, attribution_config)")
       .eq("id", saleId)
       .single()
     const wasAlreadyConfirmed = saleRecord?.status === "confirmed"
@@ -51,13 +52,9 @@ export async function PATCH(
     if (status === "confirmed" && project_id) {
       const salePageId = saleRecord?.page_id ?? null
 
-      // Get pixel config
-      const { data: proj } = await supabase
-        .from("projects")
-        .select("meta_pixel_id, meta_access_token, name, attribution_config")
-        .eq("id", project_id)
-        .single()
-
+      // Use project data from the joined sale query (no extra round-trip)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const proj = (saleRecord as any)?.projects ?? null
       const purchaseEnabled = proj?.attribution_config?.meta?.purchase !== false
       const pixelId = proj?.meta_pixel_id
       const accessToken = proj?.meta_access_token

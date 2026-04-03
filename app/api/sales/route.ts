@@ -11,6 +11,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "project_id required" }, { status: 400 })
     }
 
+    // Validate inputs
+    if (amount !== undefined && (typeof amount !== "number" || amount < 0)) {
+      return NextResponse.json({ error: "amount must be a non-negative number" }, { status: 400 })
+    }
+    if (phone !== undefined && phone !== null && (typeof phone !== "string" || phone.length > 20)) {
+      return NextResponse.json({ error: "invalid phone" }, { status: 400 })
+    }
+    if (reference !== undefined && reference !== null && typeof reference !== "string") {
+      return NextResponse.json({ error: "invalid reference" }, { status: 400 })
+    }
+
     // Auth check — RLS on "sales" table also enforces project membership
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

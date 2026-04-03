@@ -187,7 +187,8 @@ export default function SaleActions({ saleId, projectId, phone, amount, imageUrl
                 value={manualImageUrl}
                 onChange={(e) => setManualImageUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-500"
+                disabled={analyzing}
+                className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 

@@ -1,12 +1,19 @@
 import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
-import { NextResponse } from "next/server"
+import { isRateLimited } from "@/lib/rate-limit"
+import { NextRequest, NextResponse } from "next/server"
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   // Verify internal secret
   const secret = req.headers.get("x-internal-secret")
   if (!process.env.INTERNAL_SECRET || secret !== process.env.INTERNAL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Rate limit: 30 req/min per IP even with valid secret
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
+  if (isRateLimited(ip, 30, 60_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
 
   const { saleId, projectId, amount, phone, pageId } = await req.json()
