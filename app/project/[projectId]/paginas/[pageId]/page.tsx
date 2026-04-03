@@ -25,6 +25,15 @@ interface Page {
   external_url: string | null
   tracking_id: string | null
   custom_domain: string | null
+  preferred_line_id: string | null
+}
+
+interface Line {
+  id: string
+  name: string
+  phone_number: string | null
+  status: string
+  is_active: boolean
 }
 
 const templates = getAllTemplates()
@@ -35,6 +44,7 @@ export default function PageEditorPage() {
   const projectId = params.projectId as string
 
   const [page, setPage] = useState<Page | null>(null)
+  const [lines, setLines] = useState<Line[]>([])
   const [tab, setTab] = useState<"settings" | "template">("settings")
   const [saving, setSaving] = useState(false)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
@@ -43,7 +53,11 @@ export default function PageEditorPage() {
     const supabase = createClient()
     supabase.from("pages").select("*").eq("id", pageId).single()
       .then(({ data }) => { if (data) setPage(data as Page) })
-  }, [pageId])
+    supabase.from("lines").select("id, name, phone_number, status, is_active")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => { if (data) setLines(data as Line[]) })
+  }, [pageId, projectId])
 
   async function handleSave() {
     if (!page) return
@@ -64,6 +78,7 @@ export default function PageEditorPage() {
         tiktok_access_token: page.tiktok_access_token,
         is_published: page.is_published,
         custom_domain: page.custom_domain || null,
+        preferred_line_id: page.preferred_line_id || null,
       })
       .eq("id", pageId)
     setSaving(false)
@@ -184,6 +199,29 @@ export default function PageEditorPage() {
                 >
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${page.is_published ? "translate-x-5" : "translate-x-0.5"}`} />
                 </button>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Línea WhatsApp</h4>
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Línea preferida</label>
+                <select
+                  value={page.preferred_line_id || ""}
+                  onChange={(e) => setPage({ ...page, preferred_line_id: e.target.value || null })}
+                  className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
+                >
+                  <option value="">Automático (round-robin)</option>
+                  {lines.map((line) => (
+                    <option key={line.id} value={line.id}>
+                      {line.status === "connected" && line.is_active ? "🟢" : "🔴"}{" "}
+                      {line.name}{line.phone_number ? ` · ${line.phone_number}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-zinc-600">
+                  Si la línea elegida está desconectada, se usará otra activa automáticamente.
+                </p>
               </div>
             </section>
 

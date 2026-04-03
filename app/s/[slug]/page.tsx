@@ -74,27 +74,44 @@ export default async function SmartLinkPage({
     return <BotContent pageName={slug} />
   }
 
-  // Find active lines for this project, load balance
-  const { data: lines } = await supabase
-    .from("lines")
-    .select("id, phone_number, name")
-    .eq("project_id", page.project_id)
-    .eq("is_active", true)
-    .eq("status", "connected")
+  // Line selection: preferred_line_id → if active+connected use it; otherwise round-robin
+  type LineRow = { id: string; phone_number: string | null; name: string }
+  let targetLine: LineRow | null = null
 
-  // Round-robin: pick next line based on usage counts via RPC (no 1000-row truncation)
-  let targetLine = lines?.[0] || null
-  if (lines && lines.length > 1) {
-    const { data: usageData } = await supabase
-      .rpc("get_line_usage_counts", { p_project_id: page.project_id })
+  const preferredLineId = (page as Record<string, unknown>).preferred_line_id as string | null
+  if (preferredLineId) {
+    const { data: preferred } = await supabase
+      .from("lines")
+      .select("id, phone_number, name")
+      .eq("id", preferredLineId)
+      .eq("is_active", true)
+      .eq("status", "connected")
+      .single()
+    targetLine = preferred ?? null
+  }
 
-    const countMap: Record<string, number> = {}
-    usageData?.forEach((row: { line_id: string; usage_count: number }) => {
-      countMap[row.line_id] = row.usage_count
-    })
-    targetLine = lines.reduce((min, line) =>
-      (countMap[line.id] || 0) < (countMap[min.id] || 0) ? line : min
-    )
+  // Fallback: round-robin across all active+connected lines in the project
+  if (!targetLine) {
+    const { data: lines } = await supabase
+      .from("lines")
+      .select("id, phone_number, name")
+      .eq("project_id", page.project_id)
+      .eq("is_active", true)
+      .eq("status", "connected")
+
+    if (lines && lines.length === 1) {
+      targetLine = lines[0]
+    } else if (lines && lines.length > 1) {
+      const { data: usageData } = await supabase
+        .rpc("get_line_usage_counts", { p_project_id: page.project_id })
+      const countMap: Record<string, number> = {}
+      usageData?.forEach((row: { line_id: string; usage_count: number }) => {
+        countMap[row.line_id] = row.usage_count
+      })
+      targetLine = lines.reduce((min, line) =>
+        (countMap[line.id] || 0) < (countMap[min.id] || 0) ? line : min
+      )
+    }
   }
 
   // Resolve pixel config + attribution config: page-level first, then project-level
