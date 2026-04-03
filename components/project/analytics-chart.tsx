@@ -15,6 +15,7 @@ interface DailyData {
   date: string
   page_view: number
   button_click: number
+  conversation_start: number
   purchase: number
 }
 
@@ -25,6 +26,7 @@ interface Props {
 const SERIES = [
   { key: "page_view", label: "Visitas", color: "#3b82f6" },
   { key: "button_click", label: "Clics", color: "#8b5cf6" },
+  { key: "conversation_start", label: "Conversaciones", color: "#f59e0b" },
   { key: "purchase", label: "Ventas", color: "#10b981" },
 ] as const
 
