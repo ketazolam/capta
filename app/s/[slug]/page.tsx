@@ -1,9 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/server"
 import { headers } from "next/headers"
 import { notFound } from "next/navigation"
-import SmartLinkClient from "./smart-link-client"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { nanoid } from "nanoid"
+import { getTemplate } from "@/lib/templates/registry"
 
 // Crawler/bot user agents — skip tracking for these
 const BOT_AGENTS = [
@@ -43,6 +43,7 @@ export default async function SmartLinkPage({
     .eq("slug", slug)
     .eq("is_published", true)
     .limit(1)
+    // template_id and template_config are included via *
 
   const page = pages?.[0] ?? null
 
@@ -135,8 +136,12 @@ export default async function SmartLinkPage({
   const waMessage = page.whatsapp_message?.replace("{{ref}}", sp.ref || "") || "Hola!"
   const waPhone = targetLine?.phone_number?.replace(/\D/g, "") || null
 
+  const templateId = (page.template_id as string | null) ?? "whatsapp-redirect"
+  const template = getTemplate(templateId) ?? getTemplate("whatsapp-redirect")!
+  const TemplateComponent = template.component
+
   return (
-    <SmartLinkClient
+    <TemplateComponent
       pageId={page.id}
       projectId={page.project_id}
       sessionId={sessionId}
@@ -144,6 +149,7 @@ export default async function SmartLinkPage({
       waMessage={waMessage}
       autoRedirect={page.auto_redirect}
       lineId={targetLine?.id || null}
+      config={(page.template_config as Record<string, unknown>) ?? {}}
     />
   )
 }

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { useParams, useRouter } from "next/navigation"
-import { Save, Eye, Globe, Settings, Code } from "lucide-react"
+import { useParams } from "next/navigation"
+import { Save, Eye, Globe, Settings, Layout } from "lucide-react"
 import { toast } from "sonner"
+import { getAllTemplates } from "@/lib/templates/registry"
+import type { ConfigField } from "@/lib/templates/types"
 
 interface Page {
   id: string
@@ -12,7 +14,8 @@ interface Page {
   slug: string
   whatsapp_message: string
   auto_redirect: boolean
-  html_content: string | null
+  template_id: string | null
+  template_config: Record<string, unknown> | null
   meta_pixel_id: string | null
   meta_access_token: string | null
   tiktok_pixel_id: string | null
@@ -20,21 +23,21 @@ interface Page {
   is_published: boolean
 }
 
+const templates = getAllTemplates()
+
 export default function PageEditorPage() {
   const params = useParams()
-  const router = useRouter()
   const pageId = params.pageId as string
-  const projectId = params.projectId as string
 
   const [page, setPage] = useState<Page | null>(null)
-  const [tab, setTab] = useState<"settings" | "html">("settings")
+  const [tab, setTab] = useState<"settings" | "template">("settings")
   const [saving, setSaving] = useState(false)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta.vercel.app"
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
 
   useEffect(() => {
     const supabase = createClient()
     supabase.from("pages").select("*").eq("id", pageId).single()
-      .then(({ data }) => { if (data) setPage(data) })
+      .then(({ data }) => { if (data) setPage(data as Page) })
   }, [pageId])
 
   async function handleSave() {
@@ -48,7 +51,8 @@ export default function PageEditorPage() {
         slug: page.slug,
         whatsapp_message: page.whatsapp_message,
         auto_redirect: page.auto_redirect,
-        html_content: page.html_content,
+        template_id: page.template_id || "whatsapp-redirect",
+        template_config: page.template_config,
         meta_pixel_id: page.meta_pixel_id,
         meta_access_token: page.meta_access_token,
         tiktok_pixel_id: page.tiktok_pixel_id,
@@ -61,11 +65,19 @@ export default function PageEditorPage() {
     toast.success("Guardado")
   }
 
+  function setConfigField(key: string, value: unknown) {
+    if (!page) return
+    setPage({ ...page, template_config: { ...(page.template_config ?? {}), [key]: value } })
+  }
+
   if (!page) return (
     <div className="flex items-center justify-center h-full">
       <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   )
+
+  const activeTemplateId = page.template_id || "whatsapp-redirect"
+  const activeTemplate = templates.find((t) => t.id === activeTemplateId) ?? templates[0]
 
   return (
     <div className="flex flex-col h-full">
@@ -85,11 +97,11 @@ export default function PageEditorPage() {
             Configuración
           </button>
           <button
-            onClick={() => setTab("html")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${tab === "html" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+            onClick={() => setTab("template")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${tab === "template" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
           >
-            <Code className="w-3.5 h-3.5" />
-            HTML
+            <Layout className="w-3.5 h-3.5" />
+            Template
           </button>
           <a
             href={`${appUrl}/s/${page.slug}`}
@@ -115,7 +127,6 @@ export default function PageEditorPage() {
         {/* Settings panel */}
         {tab === "settings" && (
           <div className="w-80 border-r border-zinc-800 overflow-y-auto p-5 space-y-6 bg-[#0d0d0d]">
-            {/* General */}
             <section className="space-y-3">
               <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">General</h4>
               <div className="space-y-1">
@@ -165,7 +176,6 @@ export default function PageEditorPage() {
               </div>
             </section>
 
-            {/* Meta Pixel */}
             <section className="space-y-3">
               <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
                 <Globe className="w-3.5 h-3.5" />
@@ -192,7 +202,6 @@ export default function PageEditorPage() {
               </div>
             </section>
 
-            {/* TikTok Pixel */}
             <section className="space-y-3">
               <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">TikTok Pixel</h4>
               <div className="space-y-1">
@@ -218,19 +227,44 @@ export default function PageEditorPage() {
           </div>
         )}
 
-        {/* HTML Editor */}
-        {tab === "html" && (
-          <div className="w-80 border-r border-zinc-800 bg-[#0d0d0d] flex flex-col">
-            <div className="px-4 py-3 border-b border-zinc-800">
-              <p className="text-xs text-zinc-500">Editor HTML personalizado</p>
-              <p className="text-xs text-zinc-600 mt-0.5">Reemplaza el contenido por defecto de la página</p>
+        {/* Template tab */}
+        {tab === "template" && (
+          <div className="w-80 border-r border-zinc-800 overflow-y-auto bg-[#0d0d0d] flex flex-col">
+            {/* Template picker */}
+            <div className="p-4 border-b border-zinc-800 space-y-3">
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Template</h4>
+              <div className="grid grid-cols-1 gap-2">
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setPage({ ...page, template_id: t.id, template_config: {} })}
+                    className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                      activeTemplateId === t.id
+                        ? "bg-emerald-500/10 border-emerald-500/40 text-white"
+                        : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                    }`}
+                  >
+                    <p className="font-medium">{t.name}</p>
+                    <p className="text-xs text-zinc-600 mt-0.5">{t.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
-            <textarea
-              value={page.html_content || ""}
-              onChange={(e) => setPage({ ...page, html_content: e.target.value })}
-              placeholder="<div>Tu HTML aquí...</div>"
-              className="flex-1 bg-[#0d0d0d] text-green-400 text-xs font-mono p-4 resize-none outline-none"
-            />
+
+            {/* Config form — generated from configSchema */}
+            {activeTemplate.configSchema.length > 0 && (
+              <div className="p-4 space-y-4">
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Configuración</h4>
+                {activeTemplate.configSchema.map((field: ConfigField) => (
+                  <ConfigFieldInput
+                    key={field.key}
+                    field={field}
+                    value={(page.template_config ?? {})[field.key] ?? field.default ?? ""}
+                    onChange={(val) => setConfigField(field.key, val)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -238,20 +272,108 @@ export default function PageEditorPage() {
         <div className="flex-1 bg-zinc-950 flex items-center justify-center p-8">
           <div className="w-80 h-[640px] bg-[#0a0a0a] rounded-[2rem] border-2 border-zinc-700 overflow-hidden shadow-2xl relative">
             <div className="h-full flex flex-col items-center justify-center px-6 text-center space-y-4">
-              <div className="w-14 h-14 rounded-xl bg-emerald-500 flex items-center justify-center">
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center"
+                style={{ background: (page.template_config?.accentColor as string) || "#22c55e" }}
+              >
                 <svg viewBox="0 0 24 24" className="w-8 h-8 fill-black" xmlns="http://www.w3.org/2000/svg">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                 </svg>
               </div>
-              <p className="text-white font-semibold">Redirigiendo a WhatsApp...</p>
-              <p className="text-zinc-500 text-xs">En unos segundos se abrirá el chat</p>
-              <button className="w-full py-3 bg-emerald-500 text-black font-semibold rounded-xl text-sm">
-                Ir a WhatsApp ahora
+              <p className="text-white font-semibold text-sm">
+                {(page.template_config?.headlineText as string) || (page.auto_redirect ? "Redirigiendo a WhatsApp..." : "Ir a WhatsApp")}
+              </p>
+              <button
+                className="w-full py-3 font-semibold rounded-xl text-sm text-black"
+                style={{ background: (page.template_config?.accentColor as string) || "#22c55e" }}
+              >
+                {(page.template_config?.buttonText as string) || "Ir a WhatsApp ahora"}
               </button>
+              {activeTemplateId !== "whatsapp-redirect" && (
+                <p className="text-xs text-zinc-500">{activeTemplate.name}</p>
+              )}
             </div>
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ConfigFieldInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: ConfigField
+  value: unknown
+  onChange: (val: unknown) => void
+}) {
+  const strVal = (value as string) ?? ""
+
+  return (
+    <div className="space-y-1">
+      <label className="text-xs text-zinc-500">{field.label}</label>
+      {field.type === "text" && (
+        <input
+          value={strVal}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
+        />
+      )}
+      {field.type === "textarea" && (
+        <textarea
+          value={strVal}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          rows={3}
+          className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none border border-zinc-700 focus:border-emerald-500"
+        />
+      )}
+      {field.type === "color" && (
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={strVal || (field.default as string) || "#000000"}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-9 h-9 rounded-lg border border-zinc-700 bg-zinc-800 cursor-pointer p-0.5"
+          />
+          <input
+            value={strVal}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder || "#000000"}
+            className="flex-1 bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
+          />
+        </div>
+      )}
+      {field.type === "image-url" && (
+        <input
+          value={strVal}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder || "https://..."}
+          className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
+        />
+      )}
+      {field.type === "boolean" && (
+        <button
+          onClick={() => onChange(!value)}
+          className={`w-10 h-5.5 rounded-full transition-colors relative ${value ? "bg-emerald-500" : "bg-zinc-700"}`}
+        >
+          <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${value ? "translate-x-5" : "translate-x-0.5"}`} />
+        </button>
+      )}
+      {field.type === "select" && field.options && (
+        <select
+          value={strVal}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
+        >
+          {field.options.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      )}
     </div>
   )
 }
