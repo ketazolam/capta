@@ -12,6 +12,7 @@ export type PalaceConfigState = {
   whatsappUrl: string
   getWhatsAppUrlForGame: (gameName: string) => string
   isLoading: boolean
+  siteName: string
 }
 
 const PalaceConfigContext = createContext<PalaceConfigState | null>(null)
@@ -19,10 +20,12 @@ const PalaceConfigContext = createContext<PalaceConfigState | null>(null)
 export function PalaceConfigProvider({
   waPhone,
   waMessage,
+  siteName,
   children,
 }: {
   waPhone: string | null
   waMessage: string
+  siteName?: string
   children: ReactNode
 }) {
   const value = useMemo<PalaceConfigState>(() => {
@@ -38,8 +41,9 @@ export function PalaceConfigProvider({
           ? `https://wa.me/${number}?text=${encodeURIComponent(gameMsg.replace("{game}", gameName))}`
           : "",
       isLoading: false,
+      siteName: siteName || "Palace Casino",
     }
-  }, [waPhone, waMessage])
+  }, [waPhone, waMessage, siteName])
 
   return (
     <PalaceConfigContext.Provider value={value}>

@@ -1,4 +1,7 @@
-import { Gift, MessageSquare, ShieldCheck, Zap } from "lucide-react";
+"use client"
+
+import { Gift, MessageSquare, ShieldCheck, Zap } from "lucide-react"
+import { usePalaceConfig } from "./_context"
 
 
 const benefits = [
@@ -29,6 +32,7 @@ const benefits = [
 ];
 
 export default function Benefits() {
+  const { siteName } = usePalaceConfig()
   return (
     <section 
       className="section-padding bg-white"
@@ -41,7 +45,7 @@ export default function Benefits() {
             id="benefits-title"
             className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-neutral-900 mb-4 text-balance"
           >
-            ¿Por qué elegir Palace?
+            ¿Por qué elegir {siteName}?
           </h2>
           {/* Mejor contraste: neutral-700 en vez de neutral-600 */}
           <p className="text-neutral-700 text-lg sm:text-xl max-w-2xl mx-auto">

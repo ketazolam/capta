@@ -1,9 +1,11 @@
+"use client"
+
 import Image from "next/image"
+import { usePalaceConfig } from "./_context"
 
 interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl"
   className?: string
-  siteName?: string
 }
 
 const sizes = {
@@ -13,7 +15,8 @@ const sizes = {
   xl: { width: 320, height: 107 },
 }
 
-export default function Logo({ size = "md", className = "", siteName = "Palace" }: LogoProps) {
+export default function Logo({ size = "md", className = "" }: LogoProps) {
+  const { siteName } = usePalaceConfig()
   const { width, height } = sizes[size]
   return (
     <div className={`relative ${className}`}>
