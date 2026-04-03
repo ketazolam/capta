@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
 
       const metaEventName = metaEventMap[event_type]
       if (metaEventName) {
-        await sendMetaEvent({
+        // Fire-and-forget: CAPI failure must not affect the response to the client
+        sendMetaEvent({
           pixelId,
           accessToken,
           eventName: metaEventName,
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
             external_id: session_id || undefined,
           },
           sourceUrl: source_url || req.headers.get("referer") || undefined,
-        })
+        }).catch((err) => console.error("[Events API] CAPI error:", err))
       }
     }
 

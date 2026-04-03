@@ -24,6 +24,14 @@ export async function PATCH(
     // Use service client for subsequent DB ops (need to read visitor data, etc.)
     const supabase = await createServiceClient()
 
+    // Read current sale state BEFORE updating (to detect double-confirm)
+    const { data: saleRecord } = await supabase
+      .from("sales")
+      .select("page_id, amount, status, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+      .eq("id", saleId)
+      .single()
+    const wasAlreadyConfirmed = saleRecord?.status === "confirmed"
+
     // Update sale
     const updateData: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
     if (amount !== undefined) updateData.amount = amount
@@ -41,14 +49,7 @@ export async function PATCH(
 
     // If confirming, fire Meta CAPI Purchase + update contact
     if (status === "confirmed" && project_id) {
-      // Get sale record — check previous status to avoid double-processing
-      const { data: saleRecord } = await supabase
-        .from("sales")
-        .select("page_id, amount, status, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
-        .eq("id", saleId)
-        .single()
       const salePageId = saleRecord?.page_id ?? null
-      const wasAlreadyConfirmed = saleRecord?.status === "confirmed"
 
       // Get pixel config
       const { data: proj } = await supabase
@@ -74,25 +75,29 @@ export async function PATCH(
         if (claimed) {
           const ip = saleRecord?.visitor_ip || req.headers.get("x-forwarded-for")?.split(",")[0] || ""
           const userAgent = saleRecord?.visitor_ua || req.headers.get("user-agent") || ""
-          await sendMetaEvent({
-            pixelId,
-            accessToken,
-            eventName: "Purchase",
-            eventId: `purchase_${saleId}`,
-            userData: {
-              phone: phone || undefined,
-              client_ip_address: ip || undefined,
-              client_user_agent: userAgent || undefined,
-              external_id: saleRecord?.visitor_session_id || saleId,
-              fbp: saleRecord?.visitor_fbp || undefined,
-              fbc: saleRecord?.visitor_fbc || undefined,
-            },
-            customData: {
-              value: amount ?? saleRecord?.amount ?? 0,
-              currency: "ARS",
-              content_name: proj?.name || "",
-            },
-          })
+          try {
+            await sendMetaEvent({
+              pixelId,
+              accessToken,
+              eventName: "Purchase",
+              eventId: `purchase_${saleId}`,
+              userData: {
+                phone: phone || undefined,
+                client_ip_address: ip || undefined,
+                client_user_agent: userAgent || undefined,
+                external_id: saleRecord?.visitor_session_id || saleId,
+                fbp: saleRecord?.visitor_fbp || undefined,
+                fbc: saleRecord?.visitor_fbc || undefined,
+              },
+              customData: {
+                value: amount ?? saleRecord?.amount ?? 0,
+                currency: "ARS",
+                content_name: proj?.name || "",
+              },
+            })
+          } catch (err) {
+            console.error("[Sales PATCH] CAPI error:", err)
+          }
         }
       }
 
