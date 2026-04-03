@@ -90,12 +90,13 @@ export default function RecentDeposits() {
                       de {deposit.city}
                     </p>
                     <p className="text-green-400 font-bold text-sm mt-1">
-                      cargo {formatMoney(deposit.amount)}
+                      cargó {formatMoney(deposit.amount)}
                     </p>
                     <p className="text-neutral-500 text-xs mt-1">
                       {deposit.timeAgo}
                     </p>
                   </div>
+                  <div className="text-green-500">🟢</div>
                 </div>
               </div>
             ))}
@@ -156,9 +157,10 @@ export default function RecentDeposits() {
                       {deposit.name} de {deposit.city}
                     </p>
                     <p className="text-green-400 font-bold text-xs">
-                      {formatMoney(deposit.amount)} - {deposit.timeAgo}
+                      {formatMoney(deposit.amount)} &bull; {deposit.timeAgo}
                     </p>
                   </div>
+                  <div className="text-green-500 text-sm">🟢</div>
                 </div>
               ))}
             </div>

@@ -28,11 +28,12 @@ import RegistrationProgress from "./RegistrationProgress"
 function PalaceCasinoInner(props: TemplateProps) {
   return (
     <PalaceConfigProvider waPhone={props.waPhone} waMessage={props.waMessage}>
-      <div className="min-h-screen font-sans antialiased">
+      <div className="palace-casino min-h-screen font-sans antialiased">
         {/* Scroll tracking — invisible */}
         <ScrollTracker />
 
-        {/* Main page sections */}
+        {/* Main page sections — OfferCountdown first (sticky top bar) */}
+        <OfferCountdown />
         <Hero />
         <WinningsTicker />
         <TrustBar />
@@ -40,7 +41,6 @@ function PalaceCasinoInner(props: TemplateProps) {
         <GamesShowcase />
         <Benefits />
         <JackpotCounter />
-        <OfferCountdown />
         <Testimonials />
         <Security />
         <FinalCTA />

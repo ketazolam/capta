@@ -1,13 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { usePalaceConfig } from "./_context"
 import { useTracking } from "@/lib/templates/tracking-context"
 import { storageGet, storageSet } from "./_utils"
 
 export default function ExitIntentPopup() {
-  const { whatsappUrl } = usePalaceConfig()
-  const { trackEvent } = useTracking()
+  const { trackEvent, redirectToWhatsApp } = useTracking()
   const [isVisible, setIsVisible] = useState(false)
   const [activations, setActivations] = useState(0)
 
@@ -43,7 +41,7 @@ export default function ExitIntentPopup() {
   const handleCTA = async () => {
     await trackEvent("exit_intent_clicked")
     setIsVisible(false)
-    if (whatsappUrl) window.location.href = whatsappUrl
+    redirectToWhatsApp()
   }
 
   if (!isVisible) return null

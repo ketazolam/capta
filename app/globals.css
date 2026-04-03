@@ -31,6 +31,14 @@
 
   --color-casino-whatsapp: #25D366;
   --color-casino-whatsapp-dark: #128C7E;
+
+  /* WhatsApp color tokens used by bg-whatsapp / bg-whatsapp-dark */
+  --color-whatsapp: #25D366;
+  --color-whatsapp-dark: #128C7E;
+
+  /* Shadow tokens used by palace-casino template */
+  --shadow-float: 0 8px 30px rgb(0 0 0 / 0.12);
+  --shadow-card: 0 4px 20px rgb(0 0 0 / 0.06);
 }
 
 /* Custom component classes for Palace Casino template */
@@ -94,6 +102,8 @@
 .animate-slide-down { animation: pc-slide-down 0.3s ease-out; }
 .animate-pulse-slow { animation: pulse-slow 2s infinite; }
 .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+@keyframes slide-in-left { 0% { opacity: 0; transform: translateX(-100%) } 100% { opacity: 1; transform: translateX(0) } }
+.animate-slide-in-left { animation: slide-in-left 0.4s ease-out forwards; }
 .pause-marquee:hover { animation-play-state: paused; }
 
 @custom-variant dark (&:is(.dark *));
