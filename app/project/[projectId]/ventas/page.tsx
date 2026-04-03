@@ -3,7 +3,6 @@ import { ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import Pagination from "@/components/ui/pagination"
 import SaleActions from "@/components/project/sale-actions"
-import NuevaVentaButton from "@/components/project/nueva-venta-button"
 
 const PAGE_SIZE = 25
 
@@ -81,7 +80,7 @@ export default async function VentasPage({
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">Ventas</h2>
-        <NuevaVentaButton projectId={projectId} />
+        <span className="text-zinc-500 text-sm">{count ?? 0} ventas</span>
       </div>
 
       {/* Filters */}
