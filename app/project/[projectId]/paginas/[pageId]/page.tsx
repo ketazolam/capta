@@ -200,7 +200,7 @@ export default function PageEditorPage() {
                   placeholder="palace-casino.com.ar"
                   className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
                 />
-                <p className="text-xs text-zinc-600">Apuntá un CNAME a <code className="text-zinc-400">cname.vercel-dns.com</code> en tu DNS y avisale a Tomás para agregar el dominio en Vercel.</p>
+                <p className="text-xs text-zinc-600">DNS: <code className="text-zinc-400">www</code> → CNAME <code className="text-zinc-400">cname.vercel-dns.com</code> · apex → A <code className="text-zinc-400">76.76.21.21</code>. Luego agregar el dominio en Vercel.</p>
               </div>
             </section>
 
