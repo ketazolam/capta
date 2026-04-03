@@ -75,5 +75,5 @@ export function useTracking() {
     }
   }, [trackEvent, waUrl, sessionId])
 
-  return { trackEvent, redirectToWhatsApp, waUrl, waPhone }
+  return { trackEvent, redirectToWhatsApp, waUrl, waPhone, sessionId }
 }

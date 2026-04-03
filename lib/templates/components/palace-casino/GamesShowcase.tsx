@@ -49,7 +49,7 @@ function GameCardPlaceholder({ gameId, gameName }: { gameId: string; gameName: s
 
 export default function GamesShowcase() {
   const { whatsappUrl, getWhatsAppUrlForGame } = usePalaceConfig()
-  const { trackEvent } = useTracking()
+  const { trackEvent, sessionId } = useTracking()
   const [activeCategory, setActiveCategory] = useState("Todos")
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
 
@@ -59,6 +59,12 @@ export default function GamesShowcase() {
       ? { source: "CTA item", itemId: trackingItemId }
       : { source: "CTA listado" }
     )
+    // Dedup browser pixel Lead with same eventId as CAPI
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof window !== "undefined" && (window as any).fbq) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(window as any).fbq("track", "Lead", {}, { eventID: `button_click_${sessionId}` })
+    }
     if (url) window.location.href = url
   }
 
