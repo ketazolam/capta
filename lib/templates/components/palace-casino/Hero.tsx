@@ -53,8 +53,8 @@ export default function Hero() {
             Roma es cajera oficial • Siempre paga
           </p>
 
-          {/* Mirtha quote — below button on mobile */}
-          <div className="inline-block mb-4 sm:mb-8 px-4 py-3 bg-white/10 backdrop-blur-sm border border-gold-400/30 rounded-2xl max-w-2xl mx-auto">
+          {/* Mirtha quote — visible solo en desktop en mobile hay demasiada carga visual */}
+          <div className="hidden sm:inline-block mb-4 sm:mb-8 px-4 py-3 bg-white/10 backdrop-blur-sm border border-gold-400/30 rounded-2xl max-w-2xl mx-auto">
             <p className="text-gold-300 text-sm sm:text-base font-medium italic leading-relaxed">
               &ldquo;Si querés jugar en un casino online de verdad, con respuesta garantizada... son de mi absoluta confianza.&rdquo;
             </p>
