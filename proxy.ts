@@ -28,7 +28,8 @@ export async function proxy(request: NextRequest) {
 
   if ((isCustomDomain || isMainDomainRoot) && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    // Use service role key to bypass RLS — safe here, this runs server-side only (middleware)
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
     const res = await fetch(
       `${supabaseUrl}/rest/v1/pages?custom_domain=eq.${encodeURIComponent(hostname)}&select=slug&is_published=eq.true&limit=1`,
