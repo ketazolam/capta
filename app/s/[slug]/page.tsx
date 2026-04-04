@@ -209,7 +209,10 @@ export default async function SmartLinkPage({
     console.error("[SmartLink] page_view insert error:", eventInsertError)
   }
 
-  const waMessage = page.whatsapp_message?.replace("{{ref}}", sp.ref || "") || "Hola!"
+  const visitCode = `LD_${sessionId.slice(0, 8).toUpperCase()}`
+  const waMessage = (page.whatsapp_message || "Hola!")
+    .replace("{{ref}}", sp.ref || "")
+    .replace("{{code}}", visitCode)
   const waPhone = targetLine?.phone_number?.replace(/\D/g, "") || null
 
   const templateId = (page.template_id as string | null) ?? "whatsapp-redirect"
