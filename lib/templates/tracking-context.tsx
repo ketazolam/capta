@@ -61,7 +61,12 @@ export function useTracking() {
 
   const redirectToWhatsApp = useCallback(async () => {
     try {
-      await trackEvent("button_click")
+      // Read _fbp from document.cookie at click time — more accurate than server-side read
+      // (browser pixel sets _fbp after page load, so server-side value may be null on first visit)
+      const liveFbp = document.cookie.match(/(?:^|;\s*)_fbp=([^;]+)/)?.[1] ?? fbp ?? undefined
+      const liveFbc = document.cookie.match(/(?:^|;\s*)_fbc=([^;]+)/)?.[1] ?? fbc ?? undefined
+
+      await trackEvent("button_click", { fbp: liveFbp, fbc: liveFbc })
       // Dedup browser pixel Lead with same eventId as CAPI
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof window !== "undefined" && (window as any).fbq) {
@@ -71,9 +76,11 @@ export function useTracking() {
     } catch (err) {
       console.error("[tracking] redirect tracking error:", err)
     } finally {
-      if (waUrl) window.location.href = waUrl
+      // Delay redirect 300ms to let the browser pixel beacon (fbq Lead GET) complete
+      // before navigating away — otherwise the browser cancels the inflight request
+      if (waUrl) setTimeout(() => { window.location.href = waUrl }, 300)
     }
-  }, [trackEvent, waUrl, sessionId])
+  }, [trackEvent, waUrl, sessionId, fbp, fbc])
 
   return { trackEvent, redirectToWhatsApp, waUrl, waPhone, sessionId }
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { isRateLimited } from "@/lib/rate-limit"
@@ -138,22 +138,27 @@ export async function POST(req: NextRequest) {
 
       const metaEventName = metaEventMap[event_type]
       if (metaEventName) {
-        // Fire-and-forget: CAPI failure must not affect the response to the client
-        sendMetaEvent({
-          pixelId,
-          accessToken,
-          eventName: metaEventName,
-          eventId: `${event_type}_${session_id}`,
-          userData: {
-            phone,
-            client_ip_address: ip,
-            client_user_agent: userAgent,
-            fbp: fbp || undefined,
-            fbc: fbc || undefined,
-            external_id: session_id || undefined,
-          },
-          sourceUrl: source_url || req.headers.get("referer") || undefined,
-        }).catch((err) => console.error("[Events API] CAPI error:", err))
+        // Use after() so the serverless function stays alive until CAPI completes
+        // (fire-and-forget without after() gets killed when the response is sent)
+        const capiPixelId = pixelId
+        const capiAccessToken = accessToken
+        after(() =>
+          sendMetaEvent({
+            pixelId: capiPixelId,
+            accessToken: capiAccessToken,
+            eventName: metaEventName,
+            eventId: `${event_type}_${session_id}`,
+            userData: {
+              phone,
+              client_ip_address: ip,
+              client_user_agent: userAgent,
+              fbp: fbp || undefined,
+              fbc: fbc || undefined,
+              external_id: session_id || undefined,
+            },
+            sourceUrl: source_url || req.headers.get("referer") || undefined,
+          }).catch((err) => console.error("[Events API] CAPI error:", err))
+        )
       }
     }
 
