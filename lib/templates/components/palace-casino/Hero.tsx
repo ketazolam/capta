@@ -25,13 +25,13 @@ export default function Hero() {
 
       <div className="container-custom relative z-10 w-full px-5 pt-4 pb-6 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="flex justify-center mb-4 sm:mb-10">
+          <div className="flex justify-center mb-6 sm:mb-10">
             <Logo />
           </div>
 
           <h1
             id="hero-headline"
-            className="text-[1.6rem] sm:text-5xl lg:text-6xl font-bold uppercase tracking-wide text-white mb-4 sm:mb-6 leading-tight max-w-[20ch] mx-auto"
+            className="text-[2.2rem] sm:text-5xl lg:text-6xl font-bold uppercase tracking-wide text-white mb-6 sm:mb-6 leading-tight max-w-[20ch] mx-auto"
           >
             Reclamá tu bono del
             <span className="text-gradient block mt-1">40% ahora</span>
@@ -39,7 +39,7 @@ export default function Hero() {
 
           <button
             onClick={redirectToWhatsApp}
-            className="btn-whatsapp w-full max-w-md mx-auto text-[1.4rem] sm:text-2xl px-8 sm:px-16 py-5 sm:py-7 min-h-[66px] sm:min-h-[76px] mb-3 sm:mb-6 group animate-pulse-slow"
+            className="btn-whatsapp w-full max-w-md mx-auto text-[1.5rem] sm:text-2xl px-8 sm:px-16 py-6 sm:py-7 min-h-[74px] sm:min-h-[76px] mb-4 sm:mb-6 group animate-pulse-slow"
             aria-label="Hablar con Roma"
           >
             <svg viewBox="0 0 24 24" className="w-7 h-7 sm:w-9 sm:h-9 fill-current flex-shrink-0" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -53,8 +53,8 @@ export default function Hero() {
             Roma es cajera oficial • Siempre paga
           </p>
 
-          {/* Mirtha quote — visible solo en desktop en mobile hay demasiada carga visual */}
-          <div className="hidden sm:inline-block mb-4 sm:mb-8 px-4 py-3 bg-white/10 backdrop-blur-sm border border-gold-400/30 rounded-2xl max-w-2xl mx-auto">
+          {/* Mirtha quote — se ve al scrollear en mobile */}
+          <div className="inline-block mb-4 sm:mb-8 px-4 py-3 bg-white/10 backdrop-blur-sm border border-gold-400/30 rounded-2xl max-w-2xl mx-auto">
             <p className="text-gold-300 text-sm sm:text-base font-medium italic leading-relaxed">
               &ldquo;Si querés jugar en un casino online de verdad, con respuesta garantizada... son de mi absoluta confianza.&rdquo;
             </p>

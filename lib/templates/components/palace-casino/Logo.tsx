@@ -13,13 +13,13 @@ export default function Logo({ className = "" }: LogoProps) {
       <img
         src={GANAMOS_URL}
         alt="Casino Ganamos"
-        className="h-20 sm:h-24 w-auto object-contain drop-shadow-lg"
+        className="h-28 sm:h-24 w-auto object-contain drop-shadow-lg"
       />
-      <div className="w-px h-14 sm:h-16 bg-white/30" />
+      <div className="w-px h-20 sm:h-16 bg-white/30" />
       <img
         src={ZEUS_URL}
         alt="Casino Zeus"
-        className="h-14 sm:h-16 w-auto object-contain drop-shadow-lg opacity-90"
+        className="h-20 sm:h-16 w-auto object-contain drop-shadow-lg opacity-90"
       />
     </div>
   )
