@@ -178,18 +178,6 @@ export default function PageEditorPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-300">Redirección automática</p>
-                  <p className="text-xs text-zinc-600">Redirige al usuario automáticamente</p>
-                </div>
-                <button
-                  onClick={() => setPage({ ...page, auto_redirect: !page.auto_redirect })}
-                  className={`w-10 h-5.5 rounded-full transition-colors relative ${page.auto_redirect ? "bg-emerald-500" : "bg-zinc-700"}`}
-                >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${page.auto_redirect ? "translate-x-5" : "translate-x-0.5"}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
                   <p className="text-sm text-zinc-300">Publicada</p>
                   <p className="text-xs text-zinc-600">Visible al público</p>
                 </div>
@@ -266,6 +254,7 @@ export default function PageEditorPage() {
                   className="w-full bg-zinc-800 rounded-lg px-3 py-2 text-white text-sm outline-none border border-zinc-700 focus:border-emerald-500"
                 />
               </div>
+              <p className="text-xs text-zinc-600">Dejá vacío para usar la configuración del proyecto.</p>
             </section>
 
             <section className="space-y-3">
