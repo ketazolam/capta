@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext } from "react"
+import React, { createContext, useCallback, useContext } from "react"
 
 interface TrackingContextValue {
   pageId: string
@@ -59,7 +59,13 @@ export function useTracking() {
     [projectId, pageId, lineId, sessionId, fbp, fbc]
   )
 
+  // Debounce flag — prevents double-clicks from firing multiple events/redirects
+  const redirectingRef = React.useRef(false)
+
   const redirectToWhatsApp = useCallback(async () => {
+    if (redirectingRef.current) return
+    redirectingRef.current = true
+
     try {
       // Read _fbp from document.cookie at click time — more accurate than server-side read
       // (browser pixel sets _fbp after page load, so server-side value may be null on first visit)
