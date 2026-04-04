@@ -8,7 +8,7 @@ import type { TemplateDefinition, TemplateProps } from "@/lib/templates/types"
 import Hero from "./Hero"
 import WinningsTicker from "./WinningsTicker"
 import TrustBar from "./TrustBar"
-import HowItWorks from "./HowItWorks"
+import RomaSection from "./RomaSection"
 import GamesShowcase from "./GamesShowcase"
 import Benefits from "./Benefits"
 import JackpotCounter from "./JackpotCounter"
@@ -34,8 +34,7 @@ function PalaceCasinoInner(props: TemplateProps) {
         <Hero />
         <WinningsTicker />
         <TrustBar />
-        <HowItWorks />
-        <GamesShowcase />
+        <RomaSection />
         <Benefits />
         <JackpotCounter />
         <Testimonials />
