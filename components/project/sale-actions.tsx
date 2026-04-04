@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, X, Loader2, Image as ImageIcon, Scan } from "lucide-react"
+import { Check, X, Loader2, Scan } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
