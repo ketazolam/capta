@@ -15,19 +15,12 @@ export default function RomaSection() {
             {/* Foto placeholder de Roma */}
             <div className="flex-shrink-0">
               <div className="relative">
-                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-gradient-to-br from-primary-400 to-primary-700 flex items-center justify-center shadow-xl border-4 border-gold-400/50 overflow-hidden">
-                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full" aria-hidden="true">
-                    {/* Body/torso */}
-                    <ellipse cx="50" cy="90" rx="34" ry="26" fill="rgba(255,255,255,0.25)" />
-                    {/* Neck */}
-                    <rect x="44" y="55" width="12" height="14" rx="4" fill="rgba(255,255,255,0.35)" />
-                    {/* Head */}
-                    <circle cx="50" cy="42" r="20" fill="rgba(255,255,255,0.4)" />
-                    {/* Hair */}
-                    <ellipse cx="50" cy="26" rx="21" ry="10" fill="rgba(255,255,255,0.5)" />
-                    <ellipse cx="32" cy="40" rx="8" ry="16" fill="rgba(255,255,255,0.45)" />
-                    <ellipse cx="68" cy="40" rx="8" ry="16" fill="rgba(255,255,255,0.45)" />
-                  </svg>
+                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full shadow-xl border-4 border-gold-400/50 overflow-hidden bg-primary-700">
+                  <img
+                    src="https://randomuser.me/api/portraits/women/44.jpg"
+                    alt="Roma — Cajera oficial"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 {/* Online badge */}
                 <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
