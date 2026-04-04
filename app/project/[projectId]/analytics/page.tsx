@@ -106,6 +106,28 @@ export default async function AnalyticsPage({
 
   const confirmedSalesCount = sales?.length ?? 0
 
+  // Top campaigns by ref_code
+  let topRefsQ = supabase
+    .from("sales")
+    .select("ref_code, amount")
+    .eq("project_id", projectId)
+    .eq("status", "confirmed")
+    .gte("created_at", since.toISOString())
+    .not("ref_code", "is", null)
+  if (pageFilter) topRefsQ = topRefsQ.eq("page_id", pageFilter)
+  const { data: salesWithRef } = await topRefsQ
+
+  const refMap: Record<string, { count: number; revenue: number }> = {}
+  salesWithRef?.forEach((s) => {
+    if (!s.ref_code) return
+    refMap[s.ref_code] = refMap[s.ref_code] || { count: 0, revenue: 0 }
+    refMap[s.ref_code].count++
+    refMap[s.ref_code].revenue += Number(s.amount) || 0
+  })
+  const topRefs = Object.entries(refMap)
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5)
+
   const funnel = [
     { label: "Visitas",        value: counts.page_view,           color: "bg-blue-500" },
     { label: "Clics",          value: counts.button_click,        color: "bg-violet-500" },
@@ -231,6 +253,32 @@ export default async function AnalyticsPage({
           </div>
 
           <AnalyticsChart data={chartData} />
+
+          {topRefs.length > 0 && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-zinc-800">
+                <h3 className="text-white font-semibold text-sm">Top campa&ntilde;as</h3>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-800 bg-zinc-900/50">
+                    <th className="text-left px-5 py-2.5 text-zinc-500 font-medium">Campa&ntilde;a</th>
+                    <th className="text-left px-5 py-2.5 text-zinc-500 font-medium">Ventas</th>
+                    <th className="text-left px-5 py-2.5 text-zinc-500 font-medium">Facturaci&oacute;n</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topRefs.map(([ref, stats]) => (
+                    <tr key={ref} className="border-b border-zinc-800/50">
+                      <td className="px-5 py-2.5 text-white">{ref}</td>
+                      <td className="px-5 py-2.5 text-zinc-400">{stats.count}</td>
+                      <td className="px-5 py-2.5 text-emerald-400 font-medium">${stats.revenue.toLocaleString("es-AR")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

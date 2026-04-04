@@ -41,10 +41,11 @@ export async function POST(req: NextRequest) {
   let visitor_ip: string | null = null
   let visitor_ua: string | null = null
   let visitor_session_id: string | null = null
+  let visitor_ref_code: string | null = null
   if (line_id) {
     const { data: recentEvent } = await supabase
       .from("events")
-      .select("page_id, fbp, fbc, ip, user_agent, session_id")
+      .select("page_id, fbp, fbc, ip, user_agent, session_id, ref_code")
       .eq("line_id", line_id)
       .eq("event_type", "button_click")
       .order("created_at", { ascending: false })
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
     visitor_ip = recentEvent?.ip ?? null
     visitor_ua = recentEvent?.user_agent ?? null
     visitor_session_id = recentEvent?.session_id ?? null
+    visitor_ref_code = recentEvent?.ref_code ?? null
   }
 
   // 2B. Validate extracted amount — reject if not a positive number
@@ -94,6 +96,7 @@ export async function POST(req: NextRequest) {
       visitor_ip,
       visitor_ua,
       visitor_session_id,
+      ref_code: visitor_ref_code,
     })
     .select("id")
     .single()

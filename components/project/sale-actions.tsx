@@ -159,21 +159,20 @@ export default function SaleActions({ saleId, projectId, phone, amount, imageUrl
     <div className="flex flex-col gap-2">
       {/* Analyze row */}
       <div className="flex items-center gap-1.5">
-        {(imageUrl || manualImageUrl) ? (
-          <button
-            onClick={() => setShowImageModal(true)}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition-colors"
-          >
-            <ImageIcon className="w-3 h-3" />
-            Ver imagen
-          </button>
-        ) : null}
         <button
           onClick={() => setShowImageModal(true)}
-          className="flex items-center gap-1 px-2 py-1 text-xs bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-lg border border-violet-500/20 transition-colors"
+          className="flex items-center gap-1.5 px-2 py-1 text-xs bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-lg border border-violet-500/20 transition-colors"
         >
-          <Scan className="w-3 h-3" />
-          Analizar
+          {(imageUrl || manualImageUrl) ? (
+            <img
+              src={manualImageUrl || imageUrl || ""}
+              alt=""
+              className="w-5 h-5 object-cover rounded border border-zinc-700"
+            />
+          ) : (
+            <Scan className="w-3 h-3" />
+          )}
+          {(imageUrl || manualImageUrl) ? "Ver / Analizar" : "Analizar comprobante"}
         </button>
       </div>
 

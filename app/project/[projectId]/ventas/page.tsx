@@ -70,6 +70,8 @@ export default async function VentasPage({
 
   const [{ count }, { data: sales }] = await Promise.all([countQ, dataQ])
 
+  const hasRefCode = sales?.some((s) => (s as Record<string, unknown>).ref_code) ?? false
+
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
   const baseUrl = `/project/${projectId}/ventas`
   const buildUrl = (extra: Record<string, string>) => {
@@ -155,6 +157,7 @@ export default async function VentasPage({
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Cliente</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Monto</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Referencia</th>
+                  {hasRefCode && <th className="text-left px-4 py-3 text-zinc-500 font-medium">Campa&ntilde;a</th>}
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Comprobante</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Fecha</th>
                   <th className="text-left px-4 py-3 text-zinc-500 font-medium">Motivo</th>
@@ -179,6 +182,15 @@ export default async function VentasPage({
                       <td className="px-4 py-3 text-zinc-400 text-xs max-w-[120px] truncate">
                         {sale.reference || "—"}
                       </td>
+                      {hasRefCode && (
+                        <td className="px-4 py-3">
+                          {(sale as Record<string, unknown>).ref_code ? (
+                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-zinc-700 text-zinc-300">
+                              {(sale as Record<string, unknown>).ref_code as string}
+                            </span>
+                          ) : "—"}
+                        </td>
+                      )}
                       <td className="px-4 py-3">
                         {(sale as Record<string, unknown>).image_url ? (
                           <a href={(sale as Record<string, unknown>).image_url as string} target="_blank" rel="noopener noreferrer">
