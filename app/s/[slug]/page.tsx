@@ -34,6 +34,24 @@ function isBot(userAgent: string): boolean {
   )
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const supabase = await createServiceClient()
+  const { data: pages } = await supabase
+    .from("pages")
+    .select("template_config, whatsapp_message")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .limit(1)
+  const page = pages?.[0]
+  const siteName = (page?.template_config as Record<string, unknown>)?.siteName as string | undefined
+  const title = siteName ? `${siteName} — Casino Online` : "Casino Online"
+  return {
+    title,
+    description: "Registrate y reclamá tu bono de bienvenida.",
+  }
+}
+
 export default async function SmartLinkPage({
   params,
   searchParams,
