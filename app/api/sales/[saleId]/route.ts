@@ -25,12 +25,32 @@ export async function PATCH(
     const supabase = await createServiceClient()
 
     // Read current sale state BEFORE updating (to detect double-confirm)
-    // Include project data via FK to avoid a separate round-trip later
+    // Include project data + org_id for ownership check
     const { data: saleRecord } = await supabase
       .from("sales")
-      .select("page_id, amount, status, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, projects(meta_pixel_id, meta_access_token, name, attribution_config)")
+      .select("page_id, amount, status, phone, project_id, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, projects(org_id, meta_pixel_id, meta_access_token, name, attribution_config)")
       .eq("id", saleId)
       .single()
+
+    if (!saleRecord) {
+      return NextResponse.json({ error: "Sale not found" }, { status: 404 })
+    }
+
+    // Ownership check — verify user belongs to the org that owns this sale
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const saleOrgId = (saleRecord as any)?.projects?.org_id
+    if (saleOrgId) {
+      const { data: membership } = await supabase
+        .from("org_members")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("org_id", saleOrgId)
+        .single()
+      if (!membership) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    }
+
     const wasAlreadyConfirmed = saleRecord?.status === "confirmed"
 
     // Update sale
@@ -73,12 +93,16 @@ export async function PATCH(
         if (claimed) {
           const ip = saleRecord?.visitor_ip || req.headers.get("x-forwarded-for")?.split(",")[0] || ""
           const userAgent = saleRecord?.visitor_ua || req.headers.get("user-agent") || ""
+          // Use DB amount as authoritative source — never trust request body for CAPI value
+          const capiAmount = Number(saleRecord?.amount ?? 0)
           try {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
             await sendMetaEvent({
               pixelId,
               accessToken,
               eventName: "Purchase",
               eventId: `purchase_${saleId}`,
+              sourceUrl: salePageId ? `${appUrl}/s/${salePageId}` : appUrl,
               userData: {
                 phone: phone || undefined,
                 client_ip_address: ip || undefined,
@@ -88,7 +112,7 @@ export async function PATCH(
                 fbc: saleRecord?.visitor_fbc || undefined,
               },
               customData: {
-                value: amount ?? saleRecord?.amount ?? 0,
+                value: capiAmount,
                 currency: "ARS",
                 content_name: proj?.name || "",
               },
@@ -113,8 +137,42 @@ export async function PATCH(
           await supabase.rpc("increment_contact_purchase", {
             p_project_id: project_id,
             p_phone: phone,
-            p_amount: amount || 0,
+            p_amount: saleRecord?.amount || 0,
           })
+        }
+      }
+    }
+
+    // If rejecting a previously confirmed sale, decrement contact aggregate + clean up purchase event
+    if (status === "rejected" && wasAlreadyConfirmed) {
+      const rejPhone = phone || saleRecord?.phone
+      const rejProjectId = project_id || saleRecord?.project_id
+      const rejAmount = Number(saleRecord?.amount ?? 0)
+
+      // Remove the purchase event to keep events table consistent with sales status
+      await supabase
+        .from("events")
+        .delete()
+        .eq("event_type", "purchase")
+        .eq("session_id", saleId)
+        .eq("project_id", rejProjectId)
+
+      if (rejPhone && rejProjectId) {
+        const { data: contact } = await supabase
+          .from("contacts")
+          .select("total_purchases, purchase_count")
+          .eq("project_id", rejProjectId)
+          .eq("phone", rejPhone)
+          .single()
+        if (contact) {
+          await supabase
+            .from("contacts")
+            .update({
+              total_purchases: Math.max(0, Number(contact.total_purchases) - rejAmount),
+              purchase_count: Math.max(0, Number(contact.purchase_count) - 1),
+            })
+            .eq("project_id", rejProjectId)
+            .eq("phone", rejPhone)
         }
       }
     }
@@ -126,7 +184,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/sales/[saleId] — soft delete
+// DELETE /api/sales/[saleId] — soft delete (same rollback logic as PATCH reject)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ saleId: string }> }
@@ -137,6 +195,65 @@ export async function DELETE(
 
   const { saleId } = await params
   const supabase = await createServiceClient()
+
+  // Fetch sale before updating to check ownership and prior status
+  const { data: saleRecord } = await supabase
+    .from("sales")
+    .select("status, phone, project_id, amount, projects(org_id)")
+    .eq("id", saleId)
+    .single()
+
+  if (!saleRecord) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  // Ownership check
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const saleOrgId = (saleRecord as any)?.projects?.org_id
+  if (saleOrgId) {
+    const { data: membership } = await supabase
+      .from("org_members")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("org_id", saleOrgId)
+      .single()
+    if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const wasConfirmed = saleRecord.status === "confirmed"
+
   await supabase.from("sales").update({ status: "rejected" }).eq("id", saleId)
+
+  // If was confirmed, rollback contact aggregates and clean purchase event
+  if (wasConfirmed) {
+    const rejPhone = saleRecord.phone
+    const rejProjectId = saleRecord.project_id
+    const rejAmount = Number(saleRecord.amount ?? 0)
+
+    await supabase
+      .from("events")
+      .delete()
+      .eq("event_type", "purchase")
+      .eq("session_id", saleId)
+      .eq("project_id", rejProjectId)
+
+    if (rejPhone && rejProjectId) {
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("total_purchases, purchase_count")
+        .eq("project_id", rejProjectId)
+        .eq("phone", rejPhone)
+        .single()
+      if (contact) {
+        await supabase
+          .from("contacts")
+          .update({
+            total_purchases: Math.max(0, Number(contact.total_purchases) - rejAmount),
+            purchase_count: Math.max(0, Number(contact.purchase_count) - 1),
+          })
+          .eq("project_id", rejProjectId)
+          .eq("phone", rejPhone)
+      }
+    }
+  }
+
   return NextResponse.json({ ok: true })
 }

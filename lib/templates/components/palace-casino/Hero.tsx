@@ -83,7 +83,7 @@ export default function Hero() {
           <div className="translate-y-6 sm:translate-y-0 sm:mt-8 px-1 pb-0">
             <div className="inline-block w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-gold-400/30 rounded-2xl">
               <p className="text-gold-300 text-sm sm:text-base font-medium italic leading-relaxed">
-                &ldquo;Si querés jugar en un casino online de verdad, con respuesta garantizada... son de mi absoluta confianza.&rdquo;
+                &ldquo;Si querés jugar en un sitio de entretenimiento de verdad, con respuesta garantizada... son de mi absoluta confianza.&rdquo;
               </p>
               <p className="text-white/60 text-xs sm:text-sm mt-1.5 font-semibold tracking-wide">— Mirtha Legrand</p>
             </div>

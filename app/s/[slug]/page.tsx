@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .limit(1)
   const page = pages?.[0]
   const siteName = (page?.template_config as Record<string, unknown>)?.siteName as string | undefined
-  const title = siteName ? `${siteName} — Casino Online` : "Casino Online"
+  const title = siteName ? `${siteName} — Entretenimiento Online` : "Entretenimiento Online"
   return {
     title,
     description: "Registrate y reclamá tu bono de bienvenida.",

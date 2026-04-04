@@ -12,13 +12,13 @@ export default function Logo({ className = "" }: LogoProps) {
     <div className={`flex items-center justify-center gap-4 ${className}`}>
       <img
         src={GANAMOS_URL}
-        alt="Casino Ganamos"
+        alt="Ganamos"
         className="h-28 sm:h-24 w-auto object-contain drop-shadow-lg"
       />
       <div className="w-px h-20 sm:h-16 bg-white/30" />
       <img
         src={ZEUS_URL}
-        alt="Casino Zeus"
+        alt="Zeus"
         className="h-20 sm:h-16 w-auto object-contain drop-shadow-lg opacity-90"
       />
     </div>

@@ -41,7 +41,7 @@ export function PalaceConfigProvider({
           ? `https://wa.me/${number}?text=${encodeURIComponent(gameMsg.replace("{game}", gameName))}`
           : "",
       isLoading: false,
-      siteName: siteName || "Palace Casino",
+      siteName: siteName || "Palace",
     }
   }, [waPhone, waMessage, siteName])
 
