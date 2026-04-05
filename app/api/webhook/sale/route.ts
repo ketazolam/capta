@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
     pageSlug = page?.slug || undefined
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta.lat"
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
 
   // Send Purchase event to Meta CAPI using visitor data captured at click time
   const eventId = `purchase_${saleId}`

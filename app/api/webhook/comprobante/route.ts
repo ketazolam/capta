@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
   }
 
   const eventId = `purchase_${saleId}`
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
   let capiSent = false
   try {
     await sendMetaEvent({

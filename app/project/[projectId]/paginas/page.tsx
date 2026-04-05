@@ -18,7 +18,7 @@ export default async function PaginasPage({
     .eq("project_id", projectId)
     .order("created_at", { ascending: false })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta.vercel.app"
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
 
   return (
     <div className="p-8">

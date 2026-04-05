@@ -84,7 +84,7 @@ export async function GET(req: Request) {
       pageSlug = page?.slug || undefined
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta.lat"
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
 
     try {
       await sendMetaEvent({

@@ -110,7 +110,7 @@ export async function PATCH(
           }
 
           try {
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
             await sendMetaEvent({
               pixelId,
               accessToken,
