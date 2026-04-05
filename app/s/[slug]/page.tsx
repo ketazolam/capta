@@ -26,12 +26,43 @@ const BOT_AGENTS = [
   "facebookcatalog",
   "FacebookBot",
   "meta-externalagent",
+  "meta-externalads",
+  "WhatsApp",
 ]
 
 function isBot(userAgent: string): boolean {
   return BOT_AGENTS.some((bot) =>
     userAgent.toLowerCase().includes(bot.toLowerCase())
   )
+}
+
+// Meta/Facebook IP ranges (ASN32934) — headless ad crawlers use real browser UAs
+// so we detect them by IP range instead
+const META_IP_PREFIXES: readonly [number, number, number, number, number][] = [
+  [31, 13, 24, 0, 21],
+  [31, 13, 64, 0, 18],
+  [66, 220, 144, 0, 20],
+  [69, 63, 176, 0, 20],
+  [69, 171, 224, 0, 19],
+  [74, 119, 76, 0, 22],
+  [102, 132, 96, 0, 20],
+  [129, 134, 0, 0, 16],
+  [157, 240, 0, 0, 16],
+  [173, 252, 64, 0, 18],
+  [179, 60, 192, 0, 22],
+  [185, 60, 216, 0, 22],
+  [204, 15, 20, 0, 22],
+]
+
+function isMetaIP(ip: string): boolean {
+  const parts = ip.split(".").map(Number)
+  if (parts.length !== 4 || parts.some(isNaN)) return false
+  const ipNum = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
+  return META_IP_PREFIXES.some(([a, b, c, d, cidr]) => {
+    const netNum = (a << 24) | (b << 16) | (c << 8) | d
+    const mask = ~((1 << (32 - cidr)) - 1)
+    return (ipNum & mask) === (netNum & mask)
+  })
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -89,7 +120,9 @@ export default async function SmartLinkPage({
   if (!page) notFound()
 
   // Bot detection — show safe/alternative content
-  if (isBot(userAgent)) {
+  // Checks both user-agent (facebookexternalhit, etc.) AND Meta IP ranges
+  // (ad crawlers use real browser UAs from Meta's ASN32934 IP space)
+  if (isBot(userAgent) || isMetaIP(ip)) {
     return <BotContent pageName={slug} />
   }
 
