@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { MoreHorizontal, Zap, QrCode, RefreshCw, Loader2, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -81,6 +81,8 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
 
   const [qrError, setQrError] = useState<string | null>(null)
 
+  const qrPollCount = useRef(0)
+
   const fetchQR = useCallback(async () => {
     setQrLoading(true)
     try {
@@ -90,10 +92,22 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
         return
       }
       const json = await res.json()
-      if (json.qr) { setQrData(json.qr); setQrError(null) }
-      if (json.status === "connected") {
+      if (json.qr) {
+        setQrData(json.qr)
+        setQrError(null)
+        qrPollCount.current = 0
+      } else if (json.status === "connected") {
         setLine((l) => ({ ...l, status: "connected" }))
         setShowQR(false)
+        qrPollCount.current = 0
+      } else {
+        // No QR yet — track attempts
+        qrPollCount.current++
+        if (qrPollCount.current >= 12) {
+          // ~60 seconds without QR — something is wrong
+          setQrError("No se pudo generar el QR. Intentá cerrar y volver a escanear.")
+          qrPollCount.current = 0
+        }
       }
     } catch {
       setQrError("No se pudo conectar al servidor de WhatsApp")
@@ -129,12 +143,20 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
           toast.error((json as { error?: string }).error || "No se pudo iniciar la sesión de WhatsApp")
           return
         }
+        const json = await res.json().catch(() => ({}))
+        // If already connected, update status and skip QR panel
+        if (json.status === "connected") {
+          setLine((l) => ({ ...l, status: "connected" }))
+          toast.success("WhatsApp ya está conectado")
+          return
+        }
       } catch {
         toast.error("Servidor de WhatsApp no disponible")
         return
       }
       setQrData(null)
       setQrError(null)
+      qrPollCount.current = 0
     }
     setShowQR(!showQR)
   }

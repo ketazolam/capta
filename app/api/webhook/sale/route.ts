@@ -1,12 +1,11 @@
 import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { isRateLimited } from "@/lib/rate-limit"
+import { verifyInternalSecret } from "@/lib/verify-secret"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
-  // Verify internal secret
-  const secret = req.headers.get("x-internal-secret")
-  if (!process.env.INTERNAL_SECRET || secret !== process.env.INTERNAL_SECRET) {
+  if (!verifyInternalSecret(req.headers.get("x-internal-secret"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

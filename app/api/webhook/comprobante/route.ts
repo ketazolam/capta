@@ -3,11 +3,11 @@ import { sendMetaEvent } from "@/lib/meta-capi"
 import { analyzeComprobante } from "@/lib/comprobante"
 import { isRateLimited } from "@/lib/rate-limit"
 import { notifyAdmin } from "@/lib/notify-admin"
+import { verifyInternalSecret } from "@/lib/verify-secret"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-internal-secret")
-  if (!process.env.INTERNAL_SECRET || secret !== process.env.INTERNAL_SECRET) {
+  if (!verifyInternalSecret(req.headers.get("x-internal-secret"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -21,6 +21,9 @@ export async function POST(req: NextRequest) {
 
   if (!project_id || !image_url) {
     return NextResponse.json({ error: "project_id and image_url required" }, { status: 400 })
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(project_id)) {
+    return NextResponse.json({ error: "Invalid project_id" }, { status: 400 })
   }
 
   // 1. Analyze comprobante with Claude Vision
@@ -227,6 +230,7 @@ export async function POST(req: NextRequest) {
         currency: "ARS",
         content_name: projectName,
         content_type: "product",
+        ref_code: visitor_ref_code || undefined,
       },
     })
     capiSent = true

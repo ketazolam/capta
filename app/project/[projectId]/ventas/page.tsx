@@ -38,7 +38,7 @@ export default async function VentasPage({
   const page = Math.max(1, parseInt(sp.page || "1"))
   const statusFilter = sp.status || "all"
   const rangeFilter = sp.range || "all"
-  const q = sp.q?.trim() || ""
+  const q = (sp.q?.trim() || "").slice(0, 30)
   const supabase = await createClient()
 
   const since = getDateRange(rangeFilter)

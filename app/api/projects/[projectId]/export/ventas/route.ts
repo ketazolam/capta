@@ -31,7 +31,11 @@ export async function GET(
     .eq("project_id", projectId)
     .order("created_at", { ascending: false })
 
+  const validStatuses = ["pending", "confirmed", "rejected"]
   if (status !== "all") {
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+    }
     query = query.eq("status", status)
   }
 

@@ -95,7 +95,7 @@ export default async function AnalyticsPage({
 
   let salesQ = supabase
     .from("sales")
-    .select("amount")
+    .select("amount, meta_event_sent")
     .eq("project_id", projectId)
     .eq("status", "confirmed")
     .gte("created_at", since.toISOString())
@@ -105,6 +105,7 @@ export default async function AnalyticsPage({
   const totalRevenue = sales?.reduce((sum, s) => sum + (Number(s.amount) || 0), 0) ?? 0
 
   const confirmedSalesCount = sales?.length ?? 0
+  const capiSentCount = sales?.filter((s) => s.meta_event_sent === true).length ?? 0
 
   // Top campaigns by ref_code
   let topRefsQ = supabase
@@ -226,12 +227,25 @@ export default async function AnalyticsPage({
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <p className="text-zinc-500 text-sm mb-1">Facturación confirmada</p>
-            <p className="text-3xl font-bold text-emerald-400">
-              ${totalRevenue.toLocaleString("es-AR")}
-            </p>
-            <p className="text-xs text-zinc-600 mt-1">{sales?.length ?? 0} ventas confirmadas</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <p className="text-zinc-500 text-sm mb-1">Facturación confirmada</p>
+              <p className="text-3xl font-bold text-emerald-400">
+                ${totalRevenue.toLocaleString("es-AR")}
+              </p>
+              <p className="text-xs text-zinc-600 mt-1">{confirmedSalesCount} ventas confirmadas</p>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <p className="text-zinc-500 text-sm mb-1">Meta CAPI</p>
+              <p className="text-3xl font-bold text-white">
+                {confirmedSalesCount > 0
+                  ? `${Math.round((capiSentCount / confirmedSalesCount) * 100)}%`
+                  : "—"}
+              </p>
+              <p className="text-xs text-zinc-600 mt-1">
+                {capiSentCount}/{confirmedSalesCount} ventas enviadas a Meta
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-4 gap-4">

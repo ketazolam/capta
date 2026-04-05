@@ -28,7 +28,7 @@ export async function PATCH(
     // Include project data + org_id for ownership check
     const { data: saleRecord } = await supabase
       .from("sales")
-      .select("page_id, amount, status, phone, project_id, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, projects(org_id, meta_pixel_id, meta_access_token, name, attribution_config)")
+      .select("page_id, amount, status, phone, project_id, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, ref_code, pages:page_id(slug), projects(org_id, meta_pixel_id, meta_access_token, name, attribution_config)")
       .eq("id", saleId)
       .single()
 
@@ -95,6 +95,20 @@ export async function PATCH(
           const userAgent = saleRecord?.visitor_ua || req.headers.get("user-agent") || ""
           // Use DB amount as authoritative source — never trust request body for CAPI value
           const capiAmount = Number(saleRecord?.amount ?? 0)
+          const pageSlug = (saleRecord as any)?.pages?.slug ?? null
+
+          // Get contact name for fn (improves EMQ)
+          let contactName: string | undefined
+          if (phone) {
+            const { data: contact } = await supabase
+              .from("contacts")
+              .select("name")
+              .eq("project_id", project_id)
+              .eq("phone", phone)
+              .single()
+            contactName = contact?.name?.split(" ")[0] || undefined
+          }
+
           try {
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
             await sendMetaEvent({
@@ -102,7 +116,7 @@ export async function PATCH(
               accessToken,
               eventName: "Purchase",
               eventId: `purchase_${saleId}`,
-              sourceUrl: salePageId ? `${appUrl}/s/${salePageId}` : appUrl,
+              sourceUrl: pageSlug ? `${appUrl}/s/${pageSlug}` : appUrl,
               userData: {
                 phone: phone || undefined,
                 client_ip_address: ip || undefined,
@@ -110,11 +124,15 @@ export async function PATCH(
                 external_id: saleRecord?.visitor_session_id || saleId,
                 fbp: saleRecord?.visitor_fbp || undefined,
                 fbc: saleRecord?.visitor_fbc || undefined,
+                country: "ar",
+                fn: contactName,
               },
               customData: {
                 value: capiAmount,
                 currency: "ARS",
                 content_name: proj?.name || "",
+                content_type: "product",
+                ref_code: (saleRecord as any)?.ref_code || undefined,
               },
             })
           } catch (err) {

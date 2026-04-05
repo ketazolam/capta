@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   // Find confirmed sales with failed CAPI (up to 50 per run)
   const { data: sales, error } = await supabase
     .from("sales")
-    .select("id, project_id, page_id, phone, amount, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, created_at")
+    .select("id, project_id, page_id, phone, amount, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, ref_code, created_at")
     .eq("status", "confirmed")
     .or("meta_event_sent.is.null,meta_event_sent.eq.false")
     .order("created_at", { ascending: true })
@@ -96,6 +96,7 @@ export async function GET(req: Request) {
           currency: "ARS",
           content_name: proj?.name || "",
           content_type: "product",
+          ref_code: sale.ref_code || undefined,
         },
       })
       succeeded++
