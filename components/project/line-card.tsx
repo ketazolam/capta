@@ -87,6 +87,10 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
     setQrLoading(true)
     try {
       const res = await fetch(`/api/lines/${line.id}/qr`)
+      if (res.status === 404) {
+        setQrError("Sesión no encontrada. Cerrá el panel y volvé a hacer clic en Escanear QR.")
+        return
+      }
       if (res.status === 502 || res.status === 503) {
         setQrError("Servidor de WhatsApp no disponible")
         return
@@ -101,11 +105,10 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
         setShowQR(false)
         qrPollCount.current = 0
       } else {
-        // No QR yet — track attempts
+        // No QR yet (status: connecting/waiting) — track attempts
         qrPollCount.current++
         if (qrPollCount.current >= 12) {
-          // ~60 seconds without QR — something is wrong
-          setQrError("No se pudo generar el QR. Intentá cerrar y volver a escanear.")
+          setQrError("No se pudo generar el QR. Cerrá y volvé a intentar.")
           qrPollCount.current = 0
         }
       }
@@ -138,13 +141,11 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
     if (!showQR) {
       try {
         const res = await fetch(`/api/lines/${line.id}/start`, { method: "POST" })
+        const json = await res.json().catch(() => ({}))
         if (!res.ok) {
-          const json = await res.json().catch(() => ({}))
           toast.error((json as { error?: string }).error || "No se pudo iniciar la sesión de WhatsApp")
           return
         }
-        const json = await res.json().catch(() => ({}))
-        // If already connected, update status and skip QR panel
         if (json.status === "connected") {
           setLine((l) => ({ ...l, status: "connected" }))
           toast.success("WhatsApp ya está conectado")

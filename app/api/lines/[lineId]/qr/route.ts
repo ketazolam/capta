@@ -17,9 +17,9 @@ export async function GET(
   try {
     const res = await fetch(`${baileysUrl}/lines/${lineId}/qr`, {
       headers: process.env.INTERNAL_SECRET ? { "x-internal-secret": process.env.INTERNAL_SECRET } : {},
+      signal: AbortSignal.timeout(8000),
     })
-    if (res.status === 204) return NextResponse.json({ qr: null, status: "pending" })
-    if (res.status === 404) return NextResponse.json({ qr: null, status: "not_started" })
+    if (res.status === 404) return NextResponse.json({ qr: null, status: "not_started" }, { status: 404 })
     const json = await res.json()
     return NextResponse.json(json, { status: res.status })
   } catch {
