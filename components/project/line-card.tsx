@@ -270,12 +270,13 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
                 <QrCode className="w-10 h-10 text-red-400" />
                 <p className="text-xs text-red-500">{qrError}</p>
               </div>
-            ) : qrLoading && !qrData ? (
-              <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
             ) : qrData ? (
               <img src={qrData} alt="QR WhatsApp" className="w-full h-full object-contain" />
             ) : (
-              <QrCode className="w-24 h-24 text-zinc-900" />
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
+                <p className="text-xs text-zinc-500">Generando QR...</p>
+              </div>
             )}
           </div>
           <p className="text-zinc-500 text-xs text-center">
