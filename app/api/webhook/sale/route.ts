@@ -74,10 +74,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, capi: false })
   }
 
-  // Double-send guard + visitor data
+  // Double-send guard + visitor data + ref_code
   const { data: saleRecord } = await supabase
     .from("sales")
-    .select("meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+    .select("meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, ref_code, page_id")
     .eq("id", saleId)
     .single()
 
@@ -90,6 +90,32 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ ok: true, capi: false, skipped: "already_sent" })
   }
+
+  // Fetch contact name and page slug for enriched CAPI data
+  let contactName: string | undefined
+  let pageSlug: string | undefined
+
+  if (phone && projectId) {
+    const { data: contact } = await supabase
+      .from("contacts")
+      .select("name")
+      .eq("project_id", projectId)
+      .eq("phone", phone)
+      .single()
+    contactName = contact?.name || undefined
+  }
+
+  const resolvedPageId = saleRecord?.page_id || pageId
+  if (resolvedPageId) {
+    const { data: page } = await supabase
+      .from("pages")
+      .select("slug")
+      .eq("id", resolvedPageId)
+      .single()
+    pageSlug = page?.slug || undefined
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta.lat"
 
   // Send Purchase event to Meta CAPI using visitor data captured at click time
   const eventId = `purchase_${saleId}`
@@ -107,12 +133,17 @@ export async function POST(req: NextRequest) {
         external_id: saleRecord?.visitor_session_id || saleId,
         fbp: saleRecord?.visitor_fbp || undefined,
         fbc: saleRecord?.visitor_fbc || undefined,
+        country: "ar",
+        fn: contactName,
       },
       customData: {
         value: amount ?? 0,
         currency: "ARS",
         content_name: projectName,
+        content_type: "product",
+        ref_code: saleRecord?.ref_code || undefined,
       },
+      sourceUrl: pageSlug ? `${appUrl}/s/${pageSlug}` : appUrl,
     })
     capiSent = true
   } catch (err) {

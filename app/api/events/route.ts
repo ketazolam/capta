@@ -157,6 +157,7 @@ export async function POST(req: NextRequest) {
               external_id: session_id || undefined,
               country: "ar",
             },
+            customData: ref_code ? { ref_code } : undefined,
             sourceUrl: source_url || req.headers.get("referer") || undefined,
           }).catch((err) => console.error("[Events API] CAPI error:", err))
         )

@@ -62,7 +62,7 @@ export async function GET(req: Request) {
 
     if (!claimed) continue // Another instance already claimed it
 
-    // Get contact name for fn parameter (improves EMQ)
+    // Get contact name and page slug for enriched CAPI data
     let contactName: string | undefined
     if (sale.phone) {
       const { data: contact } = await supabase
@@ -73,6 +73,18 @@ export async function GET(req: Request) {
         .single()
       contactName = contact?.name?.split(" ")[0] || undefined
     }
+
+    let pageSlug: string | undefined
+    if (sale.page_id) {
+      const { data: page } = await supabase
+        .from("pages")
+        .select("slug")
+        .eq("id", sale.page_id)
+        .single()
+      pageSlug = page?.slug || undefined
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta.lat"
 
     try {
       await sendMetaEvent({
@@ -98,6 +110,7 @@ export async function GET(req: Request) {
           content_type: "product",
           ref_code: sale.ref_code || undefined,
         },
+        sourceUrl: pageSlug ? `${appUrl}/s/${pageSlug}` : appUrl,
       })
       succeeded++
     } catch (err) {
