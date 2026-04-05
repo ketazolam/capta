@@ -1,10 +1,10 @@
 "use client"
 
-import { useTracking } from "@/lib/templates/tracking-context"
 import { ShieldCheck, Clock, Star } from "lucide-react"
+import { usePalaceConfig } from "./_context"
 
 export default function RomaSection() {
-  const { redirectToWhatsApp } = useTracking()
+  const { scrollToHero } = usePalaceConfig()
 
   return (
     <section className="section-padding bg-neutral-50 border-y border-neutral-200">
@@ -63,7 +63,7 @@ export default function RomaSection() {
               </div>
 
               <button
-                onClick={redirectToWhatsApp}
+                onClick={scrollToHero}
                 className="btn-whatsapp px-8 py-4 text-base sm:text-lg"
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">

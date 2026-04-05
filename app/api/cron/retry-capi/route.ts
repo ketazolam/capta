@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   // Find confirmed sales with failed CAPI (up to 50 per run)
   const { data: sales, error } = await supabase
     .from("sales")
-    .select("id, project_id, page_id, phone, amount, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id")
+    .select("id, project_id, page_id, phone, amount, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, created_at")
     .eq("status", "confirmed")
     .or("meta_event_sent.is.null,meta_event_sent.eq.false")
     .order("created_at", { ascending: true })
@@ -62,12 +62,25 @@ export async function GET(req: Request) {
 
     if (!claimed) continue // Another instance already claimed it
 
+    // Get contact name for fn parameter (improves EMQ)
+    let contactName: string | undefined
+    if (sale.phone) {
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("name")
+        .eq("project_id", sale.project_id)
+        .eq("phone", sale.phone)
+        .single()
+      contactName = contact?.name?.split(" ")[0] || undefined
+    }
+
     try {
       await sendMetaEvent({
         pixelId,
         accessToken,
         eventName: "Purchase",
         eventId: `purchase_${sale.id}`,
+        eventTime: sale.created_at ? Math.floor(new Date(sale.created_at).getTime() / 1000) : undefined,
         userData: {
           phone: sale.phone || undefined,
           client_ip_address: sale.visitor_ip || undefined,
@@ -75,11 +88,14 @@ export async function GET(req: Request) {
           external_id: sale.visitor_session_id || sale.id,
           fbp: sale.visitor_fbp || undefined,
           fbc: sale.visitor_fbc || undefined,
+          country: "ar",
+          fn: contactName,
         },
         customData: {
           value: sale.amount ?? 0,
           currency: "ARS",
           content_name: proj?.name || "",
+          content_type: "product",
         },
       })
       succeeded++

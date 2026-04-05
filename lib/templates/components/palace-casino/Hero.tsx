@@ -11,6 +11,7 @@ export default function Hero() {
 
   return (
     <section
+      id="hero-cta"
       // Mobile: altura exacta del viewport menos el countdown (~52px), overflow-hidden para clippear la quote
       // Desktop: min-h normal
       className="relative h-[calc(100dvh-52px)] sm:h-auto sm:min-h-[90vh] flex flex-col sm:items-center sm:justify-center gradient-primary overflow-hidden"

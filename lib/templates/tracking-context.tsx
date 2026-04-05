@@ -37,6 +37,11 @@ export function useTracking() {
   const trackEvent = useCallback(
     async (eventType: string, extra?: Record<string, unknown>) => {
       try {
+        // Always read live cookies — _fbp is set by the pixel JS after page load,
+        // so server-side values may be null on first visits
+        const liveFbp = document.cookie.match(/(?:^|;\s*)_fbp=([^;]+)/)?.[1] ?? fbp ?? undefined
+        const liveFbc = document.cookie.match(/(?:^|;\s*)_fbc=([^;]+)/)?.[1] ?? fbc ?? undefined
+
         await fetch("/api/events", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -46,8 +51,8 @@ export function useTracking() {
             line_id: lineId,
             event_type: eventType,
             session_id: sessionId,
-            fbp,
-            fbc,
+            fbp: liveFbp,
+            fbc: liveFbc,
             source_url: window.location.href,
             ...extra,
           }),
@@ -67,12 +72,8 @@ export function useTracking() {
     redirectingRef.current = true
 
     try {
-      // Read _fbp from document.cookie at click time — more accurate than server-side read
-      // (browser pixel sets _fbp after page load, so server-side value may be null on first visit)
-      const liveFbp = document.cookie.match(/(?:^|;\s*)_fbp=([^;]+)/)?.[1] ?? fbp ?? undefined
-      const liveFbc = document.cookie.match(/(?:^|;\s*)_fbc=([^;]+)/)?.[1] ?? fbc ?? undefined
-
-      await trackEvent("button_click", { fbp: liveFbp, fbc: liveFbc })
+      // trackEvent already reads live _fbp/_fbc from cookies
+      await trackEvent("button_click")
       // Dedup browser pixel Lead with same eventId as CAPI
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof window !== "undefined" && (window as any).fbq) {
@@ -86,7 +87,7 @@ export function useTracking() {
       // before navigating away — otherwise the browser cancels the inflight request
       if (waUrl) setTimeout(() => { window.location.href = waUrl }, 300)
     }
-  }, [trackEvent, waUrl, sessionId, fbp, fbc])
+  }, [trackEvent, waUrl, sessionId])
 
   return { trackEvent, redirectToWhatsApp, waUrl, waPhone, sessionId }
 }

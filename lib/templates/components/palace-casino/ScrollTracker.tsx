@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react"
 import { useTracking } from "@/lib/templates/tracking-context"
 
 export default function ScrollTracker() {
-  const { trackEvent } = useTracking()
+  const { trackEvent, sessionId } = useTracking()
   const has50Tracked = useRef(false)
   const has90Tracked = useRef(false)
 
@@ -17,6 +17,12 @@ export default function ScrollTracker() {
       if (scrollPercent >= 50 && !has50Tracked.current) {
         has50Tracked.current = true
         trackEvent("view_content")
+        // Dual-fire browser pixel for dedup with CAPI (same pattern as Lead)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (typeof window !== "undefined" && (window as any).fbq) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(window as any).fbq("track", "ViewContent", {}, { eventID: `view_content_${sessionId}` })
+        }
       }
 
       if (scrollPercent >= 90 && !has90Tracked.current) {

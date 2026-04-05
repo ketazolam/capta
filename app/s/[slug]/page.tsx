@@ -187,6 +187,7 @@ export default async function SmartLinkPage({
           fbp,
           fbc,
           external_id: sessionId,
+          country: "ar",
         },
         sourceUrl: `${process.env.NEXT_PUBLIC_APP_URL}/s/${slug}`,
       }).catch((err) => console.error("[SmartLink] PageView CAPI error:", err))

@@ -34,6 +34,20 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient()
 
+  // Idempotency: if same image_url + project was already processed, skip duplicate
+  const { data: existingSale } = await supabase
+    .from("sales")
+    .select("id, status")
+    .eq("project_id", project_id)
+    .eq("image_url", image_url)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single()
+  if (existingSale) {
+    console.warn("[webhook/comprobante] Duplicate image_url detected, skipping:", existingSale.id)
+    return NextResponse.json({ ok: true, sale_id: existingSale.id, status: existingSale.status, duplicate: true })
+  }
+
   // 2. Infer page_id + visitor data from most recent button_click on this line (best-effort attribution)
   let inferred_page_id: string | null = null
   let visitor_fbp: string | null = null
@@ -42,10 +56,11 @@ export async function POST(req: NextRequest) {
   let visitor_ua: string | null = null
   let visitor_session_id: string | null = null
   let visitor_ref_code: string | null = null
+  let page_slug: string | null = null
   if (line_id) {
     const { data: recentEvent } = await supabase
       .from("events")
-      .select("page_id, fbp, fbc, ip, user_agent, session_id, ref_code")
+      .select("page_id, fbp, fbc, ip, user_agent, session_id, ref_code, pages:page_id(slug)")
       .eq("line_id", line_id)
       .eq("event_type", "button_click")
       .order("created_at", { ascending: false })
@@ -58,6 +73,7 @@ export async function POST(req: NextRequest) {
     visitor_ua = recentEvent?.user_agent ?? null
     visitor_session_id = recentEvent?.session_id ?? null
     visitor_ref_code = recentEvent?.ref_code ?? null
+    page_slug = (recentEvent as any)?.pages?.slug ?? null
   }
 
   // 2B. Validate extracted amount — reject if not a positive number
@@ -68,14 +84,16 @@ export async function POST(req: NextRequest) {
   // 3. Create sale as pending
   // Buscar contact_id si hay phone
   let contact_id: string | null = null
+  let contact_name: string | null = null
   if (phone) {
     const { data: contact } = await supabase
       .from("contacts")
-      .select("id")
+      .select("id, name")
       .eq("project_id", project_id)
       .eq("phone", phone)
       .single()
     contact_id = contact?.id ?? null
+    contact_name = contact?.name ?? null
   }
 
   const { data: sale, error: saleErr } = await supabase
@@ -108,22 +126,19 @@ export async function POST(req: NextRequest) {
 
   const saleId = sale.id
 
-  // Notify admin via WhatsApp if configured
-  if (line_id) {
+  // Notify admin via Telegram
+  {
+    const amount = extracted.amount ? `$${extracted.amount.toLocaleString("es-AR")}` : "monto no detectado"
+    const confidence = extracted.confidence === "high" ? "✅" : extracted.confidence === "medium" ? "⚠️" : "❓"
     const { data: projectForNotif } = await supabase
       .from("projects")
-      .select("notification_phone")
+      .select("name")
       .eq("id", project_id)
       .single()
-    if (projectForNotif?.notification_phone) {
-      const amount = extracted.amount ? `$${extracted.amount.toLocaleString("es-AR")}` : "monto no detectado"
-      const confidence = extracted.confidence === "high" ? "\u2705" : extracted.confidence === "medium" ? "\u26A0\uFE0F" : "\u2753"
-      await notifyAdmin({
-        lineId: line_id,
-        notificationPhone: projectForNotif.notification_phone,
-        message: `${confidence} Nuevo comprobante de ${phone || "desconocido"}\nMonto: ${amount}\nConfianza: ${extracted.confidence}\nVer en Capta: ${process.env.NEXT_PUBLIC_APP_URL}/project/${project_id}/ventas`,
-      })
-    }
+    const projectName = projectForNotif?.name ? ` — <b>${projectForNotif.name}</b>` : ""
+    await notifyAdmin({
+      message: `${confidence} <b>Nuevo comprobante${projectName}</b>\n📱 ${phone || "desconocido"}\nMonto: ${amount}\nVer en Capta: ${process.env.NEXT_PUBLIC_APP_URL}/project/${project_id}/ventas`,
+    })
   }
 
   // 3. Auto-confirm if confidence is high AND amount is valid
@@ -188,6 +203,7 @@ export async function POST(req: NextRequest) {
   }
 
   const eventId = `purchase_${saleId}`
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
   let capiSent = false
   try {
     await sendMetaEvent({
@@ -195,6 +211,7 @@ export async function POST(req: NextRequest) {
       accessToken: metaAccessToken,
       eventName: "Purchase",
       eventId,
+      sourceUrl: page_slug ? `${appUrl}/s/${page_slug}` : appUrl,
       userData: {
         phone,
         external_id: visitor_session_id || saleId,
@@ -202,11 +219,14 @@ export async function POST(req: NextRequest) {
         fbc: visitor_fbc || undefined,
         client_ip_address: visitor_ip || undefined,
         client_user_agent: visitor_ua || undefined,
+        country: "ar",
+        fn: contact_name?.split(" ")[0] || undefined,
       },
       customData: {
         value: extracted.amount ?? 0,
         currency: "ARS",
         content_name: projectName,
+        content_type: "product",
       },
     })
     capiSent = true

@@ -3,6 +3,7 @@ interface MetaEventParams {
   accessToken: string
   eventName: string
   eventId: string
+  eventTime?: number // Unix timestamp (seconds) — defaults to now, but use sale creation time for retries
   userData?: {
     email?: string
     phone?: string
@@ -11,6 +12,8 @@ interface MetaEventParams {
     fbp?: string
     fbc?: string
     external_id?: string
+    country?: string
+    fn?: string
   }
   customData?: {
     value?: number
@@ -32,7 +35,7 @@ export async function sendMetaEvent(params: MetaEventParams) {
     data: [
       {
         event_name: eventName,
-        event_time: Math.floor(Date.now() / 1000),
+        event_time: params.eventTime || Math.floor(Date.now() / 1000),
         event_id: eventId,
         event_source_url: sourceUrl,
         action_source: "website",
@@ -44,6 +47,8 @@ export async function sendMetaEvent(params: MetaEventParams) {
           fbp: userData?.fbp,
           fbc: userData?.fbc,
           external_id: userData?.external_id ? [await hashSHA256(userData.external_id)] : undefined,
+          country: userData?.country ? [await hashSHA256(userData.country.toLowerCase())] : undefined,
+          fn: userData?.fn ? [await hashSHA256(userData.fn.toLowerCase().trim())] : undefined,
         },
         custom_data: customData,
       },
@@ -52,7 +57,7 @@ export async function sendMetaEvent(params: MetaEventParams) {
   if (resolvedTestCode) payload.test_event_code = resolvedTestCode
 
   const res = await fetch(
-    `https://graph.facebook.com/v21.0/${pixelId}/events`,
+    `https://graph.facebook.com/v25.0/${pixelId}/events`,
     {
       method: "POST",
       headers: {

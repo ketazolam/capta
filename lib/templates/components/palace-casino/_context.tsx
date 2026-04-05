@@ -11,6 +11,7 @@ export type PalaceConfigState = {
   whatsappMessage: string
   whatsappUrl: string
   getWhatsAppUrlForGame: (gameName: string) => string
+  scrollToHero: () => void
   isLoading: boolean
   siteName: string
 }
@@ -40,6 +41,9 @@ export function PalaceConfigProvider({
         number
           ? `https://wa.me/${number}?text=${encodeURIComponent(gameMsg.replace("{game}", gameName))}`
           : "",
+      scrollToHero: () => {
+        document.getElementById("hero-cta")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      },
       isLoading: false,
       siteName: siteName || "Palace",
     }
