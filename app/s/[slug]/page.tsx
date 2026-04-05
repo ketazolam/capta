@@ -95,6 +95,7 @@ export default async function SmartLinkPage({
   const headersList = await headers()
   const userAgent = headersList.get("user-agent") || ""
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] || ""
+  const requestHost = headersList.get("host") || ""
 
   // Extract Meta tracking cookies from Cookie header (server-side)
   const cookieHeader = headersList.get("cookie") || ""
@@ -222,7 +223,7 @@ export default async function SmartLinkPage({
           external_id: sessionId,
           country: "ar",
         },
-        sourceUrl: `${process.env.NEXT_PUBLIC_APP_URL}/s/${slug}`,
+        sourceUrl: requestHost ? `https://${requestHost}/s/${slug}` : `${process.env.NEXT_PUBLIC_APP_URL}/s/${slug}`,
       }).catch((err) => console.error("[SmartLink] PageView CAPI error:", err))
     )
   }
