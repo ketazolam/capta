@@ -104,10 +104,13 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
         setLine((l) => ({ ...l, status: "connected" }))
         setShowQR(false)
         qrPollCount.current = 0
+      } else if (json.status === "disconnected") {
+        setQrError("Sesión desconectada. Cerrá el panel y volvé a escanear.")
       } else {
         // No QR yet (status: connecting/waiting) — track attempts
         qrPollCount.current++
-        if (qrPollCount.current >= 12) {
+        if (qrPollCount.current >= 6) {
+          // ~30s without QR
           setQrError("No se pudo generar el QR. Cerrá y volvé a intentar.")
           qrPollCount.current = 0
         }
