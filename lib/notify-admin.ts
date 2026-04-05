@@ -1,25 +1,15 @@
-/** Sends a WhatsApp notification to the project's notification_phone via Baileys.
- *  Uses the specified line to send the message. Non-fatal — never throws. */
+/** Sends a Telegram notification to the configured group when a comprobante arrives. Non-fatal — never throws. */
 export async function notifyAdmin(opts: {
-  lineId: string
-  notificationPhone: string
   message: string
 }): Promise<void> {
-  const baileysUrl = process.env.BAILEYS_URL
-  const secret = process.env.INTERNAL_SECRET
-  if (!baileysUrl || !opts.notificationPhone) return
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return
   try {
-    await fetch(`${baileysUrl}/send`, {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-internal-secret": secret || "",
-      },
-      body: JSON.stringify({
-        lineId: opts.lineId,
-        to: opts.notificationPhone,
-        text: opts.message,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: opts.message, parse_mode: "HTML" }),
       signal: AbortSignal.timeout(5000),
     })
   } catch {

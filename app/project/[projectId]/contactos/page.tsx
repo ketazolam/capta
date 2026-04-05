@@ -3,6 +3,7 @@ import { Users } from "lucide-react"
 import Link from "next/link"
 import Pagination from "@/components/ui/pagination"
 import ExportCsvButton from "@/components/ui/export-csv-button"
+import ContactsTable from "@/components/project/contacts-table"
 
 const PAGE_SIZE = 25
 
@@ -115,36 +116,7 @@ export default async function ContactosPage({
         </div>
       ) : (
         <>
-          <div className="border border-zinc-800 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Contacto</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Teléfono</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Total compras</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Compras</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Visto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map((contact) => (
-                  <tr key={contact.id} className="border-b border-zinc-800/50 hover:bg-zinc-900/30">
-                    <td className="px-4 py-3 text-white">{contact.name || "Sin nombre"}</td>
-                    <td className="px-4 py-3 text-zinc-400">{contact.phone}</td>
-                    <td className="px-4 py-3 text-emerald-400 font-medium">
-                      {contact.total_purchases > 0
-                        ? `$${Number(contact.total_purchases).toLocaleString("es-AR")}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400">{contact.purchase_count}</td>
-                    <td className="px-4 py-3 text-zinc-500 text-xs">
-                      {contact.last_seen_at ? new Date(contact.last_seen_at).toLocaleDateString("es-AR") : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ContactsTable contacts={contacts} />
           <Pagination
             currentPage={page}
             totalPages={totalPages}

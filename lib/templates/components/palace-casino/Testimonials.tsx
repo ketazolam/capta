@@ -8,22 +8,25 @@ const testimonials = [
   {
     name: "Martín L.",
     age: "34 años",
-    timeAsUser: "Usuario hace 8 meses",
-    text: "Probé varios sitios de juego online y este es el único donde cobré sin vueltas. El soporte por WhatsApp es posta, te contestan enseguida y te solucionan todo.",
+    timeAsUser: "Jugador hace 8 meses",
+    text: "La vi a Mirtha recomendarlo y me animé. Deposité $20.000, me dieron $8.000 de bono y retiré $47.000 en la misma semana. Roma me respondió en 2 minutos, nunca tuve que esperar.",
+    highlight: "+$47.000 retirados",
     rating: 5,
   },
   {
     name: "Carolina S.",
     age: "28 años",
-    timeAsUser: "Usuario hace 5 meses",
-    text: "Me copa que sea legal y con licencia. Deposité $10.000, me dieron los $5.000 de bono y ya retiré dos veces sin ningún drama. Muy recomendable.",
+    timeAsUser: "Jugadora hace 5 meses",
+    text: "Empecé con $5.000, me dieron $2.000 de bono y jugué Aviator. Retiré $31.500 en el día directo a Mercado Pago. Roma te explica todo desde cero, es una genia.",
+    highlight: "+$31.500 en el día",
     rating: 5,
   },
   {
     name: "Diego R.",
     age: "45 años",
-    timeAsUser: "Usuario hace 1 año",
-    text: "Los bonos diarios están muy buenos, siempre hay algo nuevo. Y las slots andan joya desde el celu. Lo uso casi todos los días.",
+    timeAsUser: "Jugador hace 1 año",
+    text: "Uso Ganamos hace un año. El mes pasado tuve mi mejor racha: deposité $50.000 y retiré $180.000. El pago fue en menos de una hora. Nunca me fallaron.",
+    highlight: "+$180.000 retirados",
     rating: 5,
   },
 ]
@@ -71,10 +74,15 @@ export default function Testimonials() {
             >
               <Quote className="absolute top-6 right-6 w-10 h-10 text-primary-100" strokeWidth={1} />
 
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-gold-400 text-gold-400" />
-                ))}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex gap-1">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-gold-400 text-gold-400" />
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">
+                  {testimonial.highlight}
+                </span>
               </div>
 
               <p className="text-neutral-700 leading-relaxed mb-6 relative z-10">

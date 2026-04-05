@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import Pagination from "@/components/ui/pagination"
-import SaleActions from "@/components/project/sale-actions"
 import ExportCsvButton from "@/components/ui/export-csv-button"
+import SalesTable from "@/components/project/sales-table"
 
 const PAGE_SIZE = 25
 
@@ -150,80 +150,11 @@ export default async function VentasPage({
         </div>
       ) : (
         <>
-          <div className="border border-zinc-800 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Cliente</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Monto</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Referencia</th>
-                  {hasRefCode && <th className="text-left px-4 py-3 text-zinc-500 font-medium">Campa&ntilde;a</th>}
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Comprobante</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Fecha</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Motivo</th>
-                  <th className="text-left px-4 py-3 text-zinc-500 font-medium">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.map((sale) => {
-                  const contact = sale.contacts as { name?: string; phone?: string } | null
-                  const isRejected = sale.status === "rejected"
-                  return (
-                    <tr key={sale.id} className={`border-b border-zinc-800/50 hover:bg-zinc-900/20 align-top ${isRejected ? "opacity-60" : ""}`}>
-                      <td className={`px-4 py-3 ${isRejected ? "line-through text-zinc-500" : "text-white"}`}>
-                        <div>{contact?.name || sale.phone || "—"}</div>
-                        {contact?.name && sale.phone && (
-                          <div className="text-zinc-500 text-xs">{sale.phone}</div>
-                        )}
-                      </td>
-                      <td className={`px-4 py-3 font-medium ${isRejected ? "line-through text-red-400/60" : "text-emerald-400"}`}>
-                        {sale.amount ? `$${Number(sale.amount).toLocaleString("es-AR")}` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-400 text-xs max-w-[120px] truncate">
-                        {sale.reference || "—"}
-                      </td>
-                      {hasRefCode && (
-                        <td className="px-4 py-3">
-                          {(sale as Record<string, unknown>).ref_code ? (
-                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-zinc-700 text-zinc-300">
-                              {(sale as Record<string, unknown>).ref_code as string}
-                            </span>
-                          ) : "—"}
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        {(sale as Record<string, unknown>).image_url ? (
-                          <a href={(sale as Record<string, unknown>).image_url as string} target="_blank" rel="noopener noreferrer">
-                            <img
-                              src={(sale as Record<string, unknown>).image_url as string}
-                              alt="comprobante"
-                              className="max-w-[40px] max-h-[40px] object-contain rounded border border-zinc-700"
-                            />
-                          </a>
-                        ) : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-500 text-xs">
-                        {new Date(sale.created_at).toLocaleDateString("es-AR")}
-                      </td>
-                      <td className="px-4 py-3 text-red-400/80 text-xs max-w-[140px] truncate">
-                        {(sale as Record<string, unknown>).reject_reason as string || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <SaleActions
-                          saleId={sale.id}
-                          projectId={projectId}
-                          phone={sale.phone ?? null}
-                          amount={sale.amount ? Number(sale.amount) : null}
-                          imageUrl={(sale as Record<string, unknown>).image_url as string | null ?? null}
-                          status={sale.status}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <SalesTable
+            sales={sales as never}
+            projectId={projectId}
+            hasRefCode={hasRefCode}
+          />
           <Pagination
             currentPage={page}
             totalPages={totalPages}
