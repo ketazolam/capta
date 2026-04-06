@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { isRateLimited } from "@/lib/rate-limit"
 import { verifyInternalSecret } from "@/lib/verify-secret"
+import { notifyAdmin } from "@/lib/notify-admin"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
@@ -117,37 +118,44 @@ export async function POST(req: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
 
-  // Send Purchase event to Meta CAPI using visitor data captured at click time
+  // Guard: skip CAPI for $0 amounts — pollutes Meta data with worthless events
+  const capiAmount = Number(amount ?? 0)
   const eventId = `purchase_${saleId}`
   let capiSent = false
-  try {
-    await sendMetaEvent({
-      pixelId: metaPixelId,
-      accessToken: metaAccessToken,
-      eventName: "Purchase",
-      eventId,
-      userData: {
-        phone,
-        client_ip_address: saleRecord?.visitor_ip || undefined,
-        client_user_agent: saleRecord?.visitor_ua || undefined,
-        external_id: saleRecord?.visitor_session_id || saleId,
-        fbp: saleRecord?.visitor_fbp || undefined,
-        fbc: saleRecord?.visitor_fbc || undefined,
-        country: "ar",
-        fn: contactName,
-      },
-      customData: {
-        value: amount ?? 0,
-        currency: "ARS",
-        content_name: projectName,
-        content_type: "product",
-        ref_code: saleRecord?.ref_code || undefined,
-      },
-      sourceUrl: pageSlug ? `${appUrl}/s/${pageSlug}` : appUrl,
-    })
-    capiSent = true
-  } catch (err) {
-    console.error("[webhook/sale] CAPI error:", err)
+
+  if (capiAmount > 0) {
+    try {
+      await sendMetaEvent({
+        pixelId: metaPixelId,
+        accessToken: metaAccessToken,
+        eventName: "Purchase",
+        eventId,
+        userData: {
+          phone,
+          client_ip_address: saleRecord?.visitor_ip || undefined,
+          client_user_agent: saleRecord?.visitor_ua || undefined,
+          external_id: saleRecord?.visitor_session_id || saleId,
+          fbp: saleRecord?.visitor_fbp || undefined,
+          fbc: saleRecord?.visitor_fbc || undefined,
+          country: "ar",
+          fn: contactName,
+        },
+        customData: {
+          value: capiAmount,
+          currency: "ARS",
+          content_name: projectName,
+          content_type: "product",
+          ref_code: saleRecord?.ref_code || undefined,
+        },
+        sourceUrl: pageSlug ? `${appUrl}/s/${pageSlug}` : appUrl,
+      })
+      capiSent = true
+    } catch (err) {
+      console.error("[webhook/sale] CAPI error:", err)
+      await notifyAdmin({
+        message: `🚨 <b>CAPI FALLÓ (webhook/sale)</b>\n📱 ${phone || "?"}\n💰 $${capiAmount.toLocaleString("es-AR")}\n❌ ${(err as Error).message}\n⚠️ Venta confirmada pero NO enviada a Meta.`,
+      })
+    }
   }
 
   // Mark sale as confirmed

@@ -114,6 +114,9 @@ export default async function AnalyticsPage({
   const conversionRate = counts.conversation_start > 0
     ? Math.round((confirmedSalesCount / counts.conversation_start) * 100)
     : null
+  const avgTicket = confirmedSalesCount > 0
+    ? Math.round(totalRevenue / confirmedSalesCount)
+    : null
 
   // Top campaigns by ref_code
   let topRefsQ = supabase
@@ -235,13 +238,20 @@ export default async function AnalyticsPage({
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <p className="text-zinc-500 text-sm mb-1">Facturación confirmada</p>
               <p className="text-3xl font-bold text-emerald-400">
                 ${totalRevenue.toLocaleString("es-AR")}
               </p>
               <p className="text-xs text-zinc-600 mt-1">{confirmedSalesCount} ventas confirmadas</p>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <p className="text-zinc-500 text-sm mb-1">Ticket promedio</p>
+              <p className="text-3xl font-bold text-white">
+                {avgTicket !== null ? `$${avgTicket.toLocaleString("es-AR")}` : "—"}
+              </p>
+              <p className="text-xs text-zinc-600 mt-1">por venta confirmada</p>
             </div>
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <p className="text-zinc-500 text-sm mb-1">Tasa de conversi&oacute;n</p>
