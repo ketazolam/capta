@@ -220,7 +220,9 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
           <div className="text-right">
             <p className="text-xs text-zinc-500">
               {line.is_active ? (
-                <span className="text-emerald-400 font-medium">{line.days_remaining} días</span>
+                line.days_remaining > 0
+                  ? <span className="text-emerald-400 font-medium">{line.days_remaining} días</span>
+                  : <span className="text-zinc-500">—</span>
               ) : (
                 <span className="text-zinc-600">Inactiva</span>
               )}

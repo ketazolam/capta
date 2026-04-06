@@ -111,9 +111,11 @@ export default async function AnalyticsPage({
 
   const confirmedSalesCount = sales?.length ?? 0
   const capiSentCount = sales?.filter((s) => s.meta_event_sent === true).length ?? 0
-  const conversionRate = counts.conversation_start > 0
+  const conversionRateRaw = counts.conversation_start > 0
     ? Math.round((confirmedSalesCount / counts.conversation_start) * 100)
     : null
+  // Cap at 100% — rates > 100% happen when manual/test sales bypass the conversation funnel
+  const conversionRate = conversionRateRaw !== null && conversionRateRaw <= 100 ? conversionRateRaw : null
   const avgTicket = confirmedSalesCount > 0
     ? Math.round(totalRevenue / confirmedSalesCount)
     : null
@@ -278,9 +280,11 @@ export default async function AnalyticsPage({
           <div className="grid grid-cols-4 gap-4">
             {funnel.map((item) => {
               const prev = funnel[funnel.indexOf(item) - 1]
-              const rate = prev && prev.value > 0
+              const rateRaw = prev && prev.value > 0
                 ? Math.round((item.value / prev.value) * 100)
                 : null
+              // Cap at 100% to avoid meaningless ">100%" from manual/test sales
+              const rate = rateRaw !== null && rateRaw <= 100 ? rateRaw : null
               return (
                 <div key={item.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
                   <p className="text-zinc-500 text-sm mb-2">{item.label}</p>

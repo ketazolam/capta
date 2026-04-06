@@ -90,7 +90,7 @@ export default function MetaConnectSection({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-white flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-white font-bold text-xs">f</div>
+            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-white font-bold text-xs" aria-hidden="true">f</div>
             Meta Ads
           </h3>
           <p className="text-zinc-500 text-sm mt-0.5">Conectá tu cuenta para enviar eventos vía CAPI</p>

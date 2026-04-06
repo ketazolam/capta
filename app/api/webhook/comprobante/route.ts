@@ -251,6 +251,11 @@ export async function POST(req: NextRequest) {
         p_phone: phone,
         p_amount: extracted.amount || 0,
       })
+      // Link sale to contact if it wasn't linked at insert time (contact didn't exist yet)
+      if (!contact_id) {
+        const { data: newContact } = await supabase.from("contacts").select("id").eq("project_id", project_id).eq("phone", phone).single()
+        if (newContact?.id) await supabase.from("sales").update({ contact_id: newContact.id }).eq("id", saleId)
+      }
     }
     return NextResponse.json({ ok: true, sale_id: saleId, status: "confirmed", extracted, capi: false })
   }
@@ -303,6 +308,11 @@ export async function POST(req: NextRequest) {
       p_phone: phone,
       p_amount: extracted.amount || 0,
     })
+    // Link sale to contact if it wasn't linked at insert time (contact didn't exist yet)
+    if (!contact_id) {
+      const { data: newContact } = await supabase.from("contacts").select("id").eq("project_id", project_id).eq("phone", phone).single()
+      if (newContact?.id) await supabase.from("sales").update({ contact_id: newContact.id }).eq("id", saleId)
+    }
   }
 
   return NextResponse.json({ ok: true, sale_id: saleId, status: "confirmed", extracted, capi: true, eventId })
