@@ -29,13 +29,19 @@ export async function POST(req: NextRequest) {
   }
 
   // 1. Analyze comprobante with Claude Vision
+  // If Vision fails (e.g. Anthropic credits exhausted), create a pending sale with null amount
+  // so the admin can review it manually — prevents total loss of the comprobante
   let extracted
   try {
     extracted = await analyzeComprobante(image_url)
   } catch (err) {
     const errMsg = (err as Error).message || String(err)
     console.error("[webhook/comprobante] Vision error:", errMsg)
-    return NextResponse.json({ error: "Failed to analyze image", detail: errMsg }, { status: 422 })
+    // Fallback: continue with null extracted data — sale will be created as pending
+    extracted = { amount: null, reference: null, bank: null, date: null, recipient: null, confidence: "low", raw_text: "" }
+    await notifyAdmin({
+      message: `⚠️ <b>VISION FALLÓ — revisión manual requerida</b>\n📱 ${phone || "?"}\n🔗 ${image_url}\n❌ ${errMsg}\n\nSe creó venta pendiente sin monto — confirmala manualmente.`,
+    })
   }
 
   const supabase = await createServiceClient()
