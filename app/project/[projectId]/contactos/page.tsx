@@ -3,6 +3,7 @@ import { Users } from "lucide-react"
 import Link from "next/link"
 import Pagination from "@/components/ui/pagination"
 import ExportCsvButton from "@/components/ui/export-csv-button"
+import RefreshButton from "@/components/ui/refresh-button"
 import ContactsTable from "@/components/project/contacts-table"
 
 const PAGE_SIZE = 25
@@ -18,7 +19,7 @@ export default async function ContactosPage({
   const sp = await searchParams
   const page = Math.max(1, parseInt(sp.page || "1"))
   const q = sp.q?.trim() || ""
-  const sort = sp.sort || "purchases"
+  const sort = sp.sort || "recent"
   const supabase = await createClient()
 
   const orderCol = sort === "recent" ? "last_seen_at" : "total_purchases"
@@ -41,6 +42,7 @@ export default async function ContactosPage({
     dataQ = dataQ.or(`phone.ilike.${likeQ},name.ilike.${likeQ}`)
   }
 
+  const loadedAt = Date.now()
   const [{ count }, { data: contacts }] = await Promise.all([countQ, dataQ])
 
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
@@ -55,6 +57,7 @@ export default async function ContactosPage({
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">Contactos</h2>
         <div className="flex items-center gap-3">
+          <RefreshButton loadedAt={loadedAt} />
           <ExportCsvButton
             href={`/api/projects/${projectId}/export/contactos`}
           />

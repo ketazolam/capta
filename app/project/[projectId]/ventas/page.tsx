@@ -3,6 +3,7 @@ import { ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import Pagination from "@/components/ui/pagination"
 import ExportCsvButton from "@/components/ui/export-csv-button"
+import RefreshButton from "@/components/ui/refresh-button"
 import SalesTable from "@/components/project/sales-table"
 
 const PAGE_SIZE = 25
@@ -76,6 +77,7 @@ export default async function VentasPage({
     countQ = countQ.or(`phone.ilike.${likeQ},reference.ilike.${likeQ}`)
   }
 
+  const loadedAt = Date.now()
   const [{ count }, { data: sales }] = await Promise.all([countQ, dataQ])
 
   const hasRefCode = sales?.some((s) => (s as Record<string, unknown>).ref_code) ?? false
@@ -92,6 +94,7 @@ export default async function VentasPage({
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">Ventas</h2>
         <div className="flex items-center gap-3">
+          <RefreshButton loadedAt={loadedAt} />
           <ExportCsvButton
             href={`/api/projects/${projectId}/export/ventas?range=${rangeFilter}&status=${statusFilter}`}
           />
