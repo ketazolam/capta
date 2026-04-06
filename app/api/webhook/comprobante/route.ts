@@ -33,8 +33,9 @@ export async function POST(req: NextRequest) {
   try {
     extracted = await analyzeComprobante(image_url)
   } catch (err) {
-    console.error("[webhook/comprobante] Vision error:", err)
-    return NextResponse.json({ error: "Failed to analyze image" }, { status: 422 })
+    const errMsg = (err as Error).message || String(err)
+    console.error("[webhook/comprobante] Vision error:", errMsg)
+    return NextResponse.json({ error: "Failed to analyze image", detail: errMsg }, { status: 422 })
   }
 
   const supabase = await createServiceClient()
