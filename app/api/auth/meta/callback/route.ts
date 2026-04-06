@@ -72,12 +72,18 @@ export async function GET(req: Request) {
     `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokenData.access_token}`
   )
   const llData = await llRes.json()
-  const longLivedToken = llData.access_token || tokenData.access_token
+  const longLivedToken = llData.access_token
+  if (!longLivedToken) {
+    return NextResponse.redirect(`${appUrl}/project/${projectId}/settings/general?meta_error=token_failed`)
+  }
 
   // 3. Get ad accounts + pixels
   const accountsRes = await fetch(
     `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name,adspixels{id,name}&access_token=${longLivedToken}&limit=50`
   )
+  if (!accountsRes.ok) {
+    return NextResponse.redirect(`${appUrl}/project/${projectId}/settings/general?meta_error=token_failed`)
+  }
   const accountsData = await accountsRes.json()
 
   // Flatten all pixels across all ad accounts

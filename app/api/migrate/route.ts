@@ -25,7 +25,6 @@ END $$;
 
   return NextResponse.json({
     message: "Run this SQL in your Supabase SQL Editor",
-    url: "https://supabase.com/dashboard/project/tisydoofuojzminqybsy/sql",
     sql,
   })
 }

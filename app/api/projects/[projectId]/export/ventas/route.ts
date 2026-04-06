@@ -2,10 +2,13 @@ import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 function escapeCsv(val: string): string {
-  if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-    return `"${val.replace(/"/g, '""')}"`
+  // Prevent CSV/formula injection: prefix = + - @ with a single quote
+  let s = val
+  if (s.match(/^[=+\-@]/)) s = "'" + s
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`
   }
-  return val
+  return s
 }
 
 export async function GET(

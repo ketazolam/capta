@@ -124,7 +124,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 2B. Dedup: same phone + same amount within 30 minutes = probable duplicate resend
+  // 2B. Dedup: same phone + same amount + pending within 30 minutes = probable duplicate resend
+  // Only check "pending" status — two legitimate sales of the same amount by same person should be allowed
   if (phone && extracted.amount && extracted.amount > 0) {
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
     const { data: recentSale } = await supabase
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest) {
       .eq("project_id", project_id)
       .eq("phone", phone)
       .eq("amount", extracted.amount)
+      .eq("status", "pending")
       .gte("created_at", thirtyMinAgo)
       .limit(1)
       .single()
