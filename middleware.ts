@@ -5,7 +5,7 @@ const APP_HOST = (process.env.NEXT_PUBLIC_APP_URL || 'https://capta-eight.vercel
   .replace('https://', '')
   .replace('http://', '')
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
 
   // Custom domain: not the main app host, not localhost, not Vercel preview URL
