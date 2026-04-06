@@ -45,11 +45,13 @@ export async function POST(req: NextRequest) {
       }
     }
     if (!matched) {
+      const fortyEightHAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
       const { data: recentClick } = await supabase
         .from("events")
         .select("page_id, session_id")
         .eq("line_id", line_id)
         .eq("event_type", "button_click")
+        .gte("created_at", fortyEightHAgo)
         .order("created_at", { ascending: false })
         .limit(1)
         .single()

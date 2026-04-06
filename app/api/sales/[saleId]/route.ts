@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
+import { notifyAdmin } from "@/lib/notify-admin"
 
 // PATCH /api/sales/[saleId] — confirm or reject a sale
 export async function PATCH(
@@ -109,6 +110,7 @@ export async function PATCH(
             contactName = contact?.name?.split(" ")[0] || undefined
           }
 
+          let capiSent = false
           try {
             const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capta-eight.vercel.app"
             await sendMetaEvent({
@@ -135,8 +137,18 @@ export async function PATCH(
                 ref_code: (saleRecord as any)?.ref_code || undefined,
               },
             })
+            capiSent = true
           } catch (err) {
             console.error("[Sales PATCH] CAPI error:", err)
+            // Revert meta_event_sent so the admin can retry manually
+            await supabase.from("sales").update({ meta_event_sent: false }).eq("id", saleId)
+            await notifyAdmin({
+              message: `🚨 <b>CAPI FALLÓ (confirmación manual)</b>\n📱 ${phone || "?"}\n💰 $${capiAmount.toLocaleString("es-AR")}\n❌ ${(err as Error).message}\n⚠️ Venta confirmada pero NO enviada a Meta.`,
+            })
+          }
+          if (!capiSent) {
+            // Ensure meta_event_sent stays false so retry is possible
+            await supabase.from("sales").update({ meta_event_sent: false }).eq("id", saleId)
           }
         }
       }

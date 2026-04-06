@@ -22,7 +22,7 @@ export async function GET(
 
   const { data: contacts, error } = await supabase
     .from("contacts")
-    .select("phone, name, total_purchases, purchase_count, created_at, last_seen_at")
+    .select("phone, name, total_purchases, purchase_count, first_seen_at, last_seen_at")
     .eq("project_id", projectId)
     .order("total_purchases", { ascending: false })
 
@@ -36,7 +36,7 @@ export async function GET(
     const name = escapeCsv(c.name || "")
     const total = c.total_purchases ? String(c.total_purchases) : "0"
     const count = c.purchase_count ? String(c.purchase_count) : "0"
-    const primera = c.created_at ? new Date(c.created_at).toLocaleDateString("es-AR") : ""
+    const primera = c.first_seen_at ? new Date(c.first_seen_at).toLocaleDateString("es-AR") : ""
     const ultima = c.last_seen_at ? new Date(c.last_seen_at).toLocaleDateString("es-AR") : ""
     return `${phone},${name},${total},${count},${primera},${ultima}`
   })

@@ -243,7 +243,7 @@ export default function ContactDetailDrawer({ contactId, onClose }: Props) {
               </div>
 
               <p className="text-zinc-700 text-xs">
-                Contacto creado: {new Date(data.contact.created_at).toLocaleDateString("es-AR")}
+                {(data.contact as any).first_seen_at && `Primer contacto: ${new Date((data.contact as any).first_seen_at).toLocaleDateString("es-AR")}`}
                 {data.contact.last_seen_at && ` · Última actividad: ${new Date(data.contact.last_seen_at).toLocaleDateString("es-AR")}`}
               </p>
             </div>

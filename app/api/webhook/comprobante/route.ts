@@ -88,13 +88,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Priority 2: fallback to most recent button_click on this line
+    // Priority 2: fallback to most recent button_click on this line (max 48h old)
     if (!clickEvent) {
+      const fortyEightHAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
       const { data: recentEvent } = await supabase
         .from("events")
         .select("page_id, fbp, fbc, ip, user_agent, session_id, ref_code, pages:page_id(slug)")
         .eq("line_id", line_id)
         .eq("event_type", "button_click")
+        .gte("created_at", fortyEightHAgo)
         .order("created_at", { ascending: false })
         .limit(1)
         .single()
