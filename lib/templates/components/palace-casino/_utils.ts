@@ -93,7 +93,7 @@ export const juegosPopulares: { nombre: string; popular: boolean }[] = [
   { nombre: "Gates of Olympus", popular: true },
   { nombre: "Aviator", popular: true },
   { nombre: "Fortune Tiger", popular: true },
-  { nombre: "Ruleta en Vivo", popular: true },
+  { nombre: "Mesa en Vivo", popular: true },
   { nombre: "Spaceman", popular: false },
   { nombre: "Big Bass Splash", popular: false },
   { nombre: "Wolf Gold", popular: false },

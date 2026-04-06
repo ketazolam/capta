@@ -43,10 +43,10 @@
 
 /* Custom component classes for Palace Casino template */
 @layer components {
-  .palace-casino .gradient-primary {
+  .palace-ent .gradient-primary {
     background: linear-gradient(135deg, #1a0a3d 0%, #2d1567 50%, #1a0a3d 100%);
   }
-  .palace-casino .btn-whatsapp {
+  .palace-ent .btn-whatsapp {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -62,18 +62,18 @@
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     background-color: #25D366;
   }
-  .palace-casino .btn-whatsapp:hover { background-color: #128C7E; }
-  .palace-casino .text-gradient {
+  .palace-ent .btn-whatsapp:hover { background-color: #128C7E; }
+  .palace-ent .text-gradient {
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
     background-image: linear-gradient(to right, #f0d875, #d4af37);
   }
-  .palace-casino .container-custom { max-width: 80rem; margin-left: auto; margin-right: auto; }
-  .palace-casino .section-padding { padding: 4rem 1.25rem; }
-  @media (min-width: 640px) { .palace-casino .section-padding { padding: 5rem 1.5rem; } }
-  @media (min-width: 1024px) { .palace-casino .section-padding { padding: 6rem 2rem; } }
-  .palace-casino .card {
+  .palace-ent .container-custom { max-width: 80rem; margin-left: auto; margin-right: auto; }
+  .palace-ent .section-padding { padding: 4rem 1.25rem; }
+  @media (min-width: 640px) { .palace-ent .section-padding { padding: 5rem 1.5rem; } }
+  @media (min-width: 1024px) { .palace-ent .section-padding { padding: 6rem 2rem; } }
+  .palace-ent .card {
     background: white;
     border-radius: 0.75rem;
     border: 1px solid #e5e5eb;
@@ -81,7 +81,7 @@
     box-shadow: 0 1px 3px rgb(0 0 0/0.1);
     transition: all 0.3s;
   }
-  .palace-casino .card:hover { box-shadow: 0 20px 25px -5px rgb(0 0 0/0.1); transform: translateY(-4px); }
+  .palace-ent .card:hover { box-shadow: 0 20px 25px -5px rgb(0 0 0/0.1); transform: translateY(-4px); }
 }
 
 /* Keyframes for Palace Casino animations */

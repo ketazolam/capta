@@ -24,7 +24,7 @@ import ExitIntentPopup from "./ExitIntentPopup"
 function PalaceCasinoInner(props: TemplateProps) {
   return (
     <PalaceConfigProvider waPhone={props.waPhone} waMessage={props.waMessage} siteName={(props.config.siteName as string) || undefined}>
-      <div className="palace-casino min-h-screen font-sans antialiased">
+      <div className="palace-ent min-h-screen font-sans antialiased">
         {/* Scroll tracking — invisible */}
         <ScrollTracker />
 

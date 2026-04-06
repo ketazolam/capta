@@ -42,9 +42,9 @@ export default function JackpotCounter() {
 
       <div className="relative z-10">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <span className="text-3xl">🎰</span>
+          <span className="text-3xl">🏆</span>
           <h3 className="text-xl font-bold text-primary-900 uppercase tracking-wide">
-            Jackpot Acumulado
+            Premio Acumulado
           </h3>
         </div>
 

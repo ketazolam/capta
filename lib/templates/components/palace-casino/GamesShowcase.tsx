@@ -6,12 +6,12 @@ import { Users, Star, TrendingUp } from "lucide-react"
 import { usePalaceConfig } from "./_context"
 
 const GAME_IMAGES: Record<string, string> = {
-  "sweet-bonanza": "/palace-casino/games/sweet-bonanza.jpg",
-  "aviator": "/palace-casino/games/aviator.jpg",
-  "gates-olympus": "/palace-casino/games/gates-of-olympus.jpg",
-  "fortune-tiger": "/palace-casino/games/fortune-tiger.jpg",
-  "ruleta-vivo": "/palace-casino/games/roulette-live.jpg",
-  "spaceman": "/palace-casino/games/spaceman.jpg",
+  "sweet-bonanza": "/ent-media/games/sweet-bonanza.jpg",
+  "aviator": "/ent-media/games/aviator.jpg",
+  "gates-olympus": "/ent-media/games/gates-of-olympus.jpg",
+  "fortune-tiger": "/ent-media/games/fortune-tiger.jpg",
+  "ruleta-vivo": "/ent-media/games/roulette-live.jpg",
+  "spaceman": "/ent-media/games/spaceman.jpg",
 }
 
 const gamePlaceholders: Record<string, { gradient: string; emoji: string }> = {
@@ -28,7 +28,7 @@ const featuredGames = [
   { id: "aviator", analyticsId: "item_02", name: "Aviator", provider: "Spribe", category: "Crash", badge: "Trending", badgeColor: "bg-orange-500", players: 456, rating: 4.8 },
   { id: "gates-olympus", analyticsId: "item_03", name: "Gates of Olympus", provider: "Pragmatic Play", category: "Slots", badge: "Hot", badgeColor: "bg-yellow-500", players: 189, rating: 4.9 },
   { id: "fortune-tiger", analyticsId: "item_04", name: "Fortune Tiger", provider: "PG Soft", category: "Slots", badge: "Nuevo", badgeColor: "bg-green-500", players: 312, rating: 4.7 },
-  { id: "ruleta-vivo", analyticsId: "item_05", name: "Ruleta en Vivo", provider: "Evolution", category: "Juegos en Vivo", badge: "VIP", badgeColor: "bg-purple-500", players: 89, rating: 4.9 },
+  { id: "ruleta-vivo", analyticsId: "item_05", name: "Mesa en Vivo", provider: "Evolution", category: "Juegos en Vivo", badge: "VIP", badgeColor: "bg-purple-500", players: 89, rating: 4.9 },
   { id: "spaceman", analyticsId: "item_06", name: "Spaceman", provider: "Pragmatic Play", category: "Crash", badge: null, badgeColor: "", players: 156, rating: 4.6 },
 ]
 
