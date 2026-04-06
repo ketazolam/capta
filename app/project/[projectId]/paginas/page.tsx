@@ -40,7 +40,11 @@ export default async function PaginasPage({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pages.map((page) => {
             const isExternal = page.page_type === "external"
-            const displayUrl = isExternal ? page.external_url : `${appUrl}/s/${page.slug}`
+            const displayUrl = isExternal
+              ? page.external_url
+              : page.custom_domain
+                ? `https://${page.custom_domain}`
+                : `${appUrl}/s/${page.slug}`
 
             return (
               <div key={page.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden group hover:border-zinc-700 transition-colors">

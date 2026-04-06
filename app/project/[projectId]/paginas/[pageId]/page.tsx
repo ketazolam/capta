@@ -130,7 +130,7 @@ export default function PageEditorPage() {
             Template
           </button>
           <a
-            href={`${appUrl}/s/${page.slug}`}
+            href={page.custom_domain ? `https://${page.custom_domain}` : `${appUrl}/s/${page.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
