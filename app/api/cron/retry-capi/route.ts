@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/supabase/server"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { NextResponse } from "next/server"
 
-// Vercel cron job — runs every 15 minutes via vercel.json
+// Vercel cron job — runs daily at 3am UTC via vercel.json
 // Retries Purchase CAPI for confirmed sales where meta_event_sent = false
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization")
@@ -42,8 +42,21 @@ export async function GET(req: Request) {
       .single()
 
     const purchaseEnabled = proj?.attribution_config?.meta?.purchase !== false
-    const pixelId = proj?.meta_pixel_id
-    const accessToken = proj?.meta_access_token
+    let pixelId = proj?.meta_pixel_id
+    let accessToken = proj?.meta_access_token
+
+    // Fallback to page-level pixel config (same logic as webhook/comprobante)
+    if ((!pixelId || !accessToken) && sale.page_id) {
+      const { data: page } = await supabase
+        .from("pages")
+        .select("meta_pixel_id, meta_access_token")
+        .eq("id", sale.page_id)
+        .single()
+      if (page?.meta_pixel_id && page?.meta_access_token) {
+        pixelId = page.meta_pixel_id
+        accessToken = page.meta_access_token
+      }
+    }
 
     if (!pixelId || !accessToken || !purchaseEnabled) {
       // No CAPI config — mark as sent so we don't retry forever
