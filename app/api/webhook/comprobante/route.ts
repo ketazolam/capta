@@ -51,7 +51,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, sale_id: existingSale.id, status: existingSale.status, duplicate: true })
   }
 
-  // 2. Infer page_id + visitor data from most recent button_click on this line (best-effort attribution)
+  // 2. Infer page_id + visitor data via attribution chain:
+  //    Priority 1: phone → conversation_start → session_id → button_click (exact per-lead)
+  //    Priority 2: most recent button_click on this line (fallback, can misattribute with concurrent leads)
   let inferred_page_id: string | null = null
   let visitor_fbp: string | null = null
   let visitor_fbc: string | null = null
@@ -61,25 +63,75 @@ export async function POST(req: NextRequest) {
   let visitor_ref_code: string | null = null
   let page_slug: string | null = null
   if (line_id) {
-    const { data: recentEvent } = await supabase
-      .from("events")
-      .select("page_id, fbp, fbc, ip, user_agent, session_id, ref_code, pages:page_id(slug)")
-      .eq("line_id", line_id)
-      .eq("event_type", "button_click")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
-    inferred_page_id = recentEvent?.page_id ?? null
-    visitor_fbp = recentEvent?.fbp ?? null
-    visitor_fbc = recentEvent?.fbc ?? null
-    visitor_ip = recentEvent?.ip ?? null
-    visitor_ua = recentEvent?.user_agent ?? null
-    visitor_session_id = recentEvent?.session_id ?? null
-    visitor_ref_code = recentEvent?.ref_code ?? null
-    page_slug = (recentEvent as any)?.pages?.slug ?? null
+    let clickEvent: Record<string, unknown> | null = null
+
+    // Priority 1: find this lead's conversation_start → get their session_id → find their button_click
+    if (phone) {
+      const { data: convEvent } = await supabase
+        .from("events")
+        .select("session_id")
+        .eq("line_id", line_id)
+        .eq("event_type", "conversation_start")
+        .eq("phone", phone)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+      if (convEvent?.session_id) {
+        const { data: exactClick } = await supabase
+          .from("events")
+          .select("page_id, fbp, fbc, ip, user_agent, session_id, ref_code, pages:page_id(slug)")
+          .eq("session_id", convEvent.session_id)
+          .eq("event_type", "button_click")
+          .limit(1)
+          .single()
+        if (exactClick) clickEvent = exactClick as Record<string, unknown>
+      }
+    }
+
+    // Priority 2: fallback to most recent button_click on this line
+    if (!clickEvent) {
+      const { data: recentEvent } = await supabase
+        .from("events")
+        .select("page_id, fbp, fbc, ip, user_agent, session_id, ref_code, pages:page_id(slug)")
+        .eq("line_id", line_id)
+        .eq("event_type", "button_click")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+      if (recentEvent) clickEvent = recentEvent as Record<string, unknown>
+    }
+
+    if (clickEvent) {
+      inferred_page_id = (clickEvent.page_id as string) ?? null
+      visitor_fbp = (clickEvent.fbp as string) ?? null
+      visitor_fbc = (clickEvent.fbc as string) ?? null
+      visitor_ip = (clickEvent.ip as string) ?? null
+      visitor_ua = (clickEvent.user_agent as string) ?? null
+      visitor_session_id = (clickEvent.session_id as string) ?? null
+      visitor_ref_code = (clickEvent.ref_code as string) ?? null
+      page_slug = (clickEvent as any)?.pages?.slug ?? null
+    }
   }
 
-  // 2B. Validate extracted amount — reject if not a positive number
+  // 2B. Dedup: same phone + same amount within 30 minutes = probable duplicate resend
+  if (phone && extracted.amount && extracted.amount > 0) {
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+    const { data: recentSale } = await supabase
+      .from("sales")
+      .select("id, status")
+      .eq("project_id", project_id)
+      .eq("phone", phone)
+      .eq("amount", extracted.amount)
+      .gte("created_at", thirtyMinAgo)
+      .limit(1)
+      .single()
+    if (recentSale) {
+      console.warn("[webhook/comprobante] Duplicate phone+amount+30min detected:", recentSale.id)
+      return NextResponse.json({ ok: true, sale_id: recentSale.id, status: recentSale.status, duplicate: true, reason: "same_phone_amount_30min" })
+    }
+  }
+
+  // 2C. Validate extracted amount — reject if not a positive number
   if (!extracted.amount || extracted.amount <= 0) {
     console.warn("[webhook/comprobante] Monto no válido:", extracted.amount, "— guardando como pendiente sin auto-confirm")
   }
@@ -109,6 +161,10 @@ export async function POST(req: NextRequest) {
       contact_id,
       amount: extracted.amount,
       reference: extracted.reference,
+      bank: extracted.bank,
+      confidence: extracted.confidence,
+      recipient: extracted.recipient,
+      transaction_date: extracted.date,
       image_url,
       raw_text: extracted.raw_text,
       status: "pending",
