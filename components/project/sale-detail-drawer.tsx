@@ -80,6 +80,10 @@ export default function SaleDetailDrawer({ saleId, projectId, onClose }: Props) 
     if (!data) return
     setActionLoading(status === "confirmed" ? "confirm" : "reject")
     try {
+      // If IA analyzed a different amount, use that as the authoritative value
+      const effectiveAmount = status === "confirmed" && analyzed?.amount
+        ? analyzed.amount
+        : data.sale.amount
       const res = await fetch(`/api/sales/${saleId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -87,7 +91,8 @@ export default function SaleDetailDrawer({ saleId, projectId, onClose }: Props) 
           status,
           project_id: projectId,
           phone: data.sale.phone,
-          amount: data.sale.amount,
+          amount: effectiveAmount,
+          ...(status === "confirmed" && analyzed?.reference ? { reference: analyzed.reference } : {}),
           ...(status === "rejected" && rejectReason ? { reject_reason: rejectReason } : {}),
         }),
       })

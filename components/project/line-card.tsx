@@ -29,13 +29,26 @@ interface Line {
   is_active: boolean
   is_incognito: boolean
   days_remaining: number
+  last_message_at: string | null
+  last_ping_at: string | null
+}
+
+function timeAgo(iso: string | null): string | null {
+  if (!iso) return null
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 2) return "hace un momento"
+  if (mins < 60) return `hace ${mins}m`
+  const hs = Math.floor(mins / 60)
+  if (hs < 24) return `hace ${hs}h`
+  return `hace ${Math.floor(hs / 24)}d`
 }
 
 export default function LineCard({ line: initialLine }: { line: Line }) {
   const [line, setLine] = useState(initialLine)
   const [showQR, setShowQR] = useState(false)
   const [qrData, setQrData] = useState<string | null>(null)
-  const [qrLoading, setQrLoading] = useState(false)
+
   const [starting, setStarting] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [newName, setNewName] = useState(line.name)
@@ -84,7 +97,7 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
   const qrPollCount = useRef(0)
 
   const fetchQR = useCallback(async () => {
-    setQrLoading(true)
+    // setQrLoading not tracked in JSX — spinner relies on qrData === null
     try {
       const res = await fetch(`/api/lines/${line.id}/qr`)
       if (res.status === 404) {
@@ -117,8 +130,6 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
       }
     } catch {
       setQrError("No se pudo conectar al servidor de WhatsApp")
-    } finally {
-      setQrLoading(false)
     }
   }, [line.id])
 
@@ -174,7 +185,9 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
           <div className={`w-2.5 h-2.5 rounded-full ${
             line.status === "connected"
               ? "bg-emerald-400"
-              : "bg-zinc-600"
+              : line.status === "connecting" || line.status === "qr_pending" || line.status === "waiting_qr"
+                ? "bg-yellow-400 animate-pulse"
+                : "bg-zinc-600"
           }`} />
           <div>
             {renaming ? (
@@ -212,14 +225,31 @@ export default function LineCard({ line: initialLine }: { line: Line }) {
                 <span className="text-zinc-600">Inactiva</span>
               )}
             </p>
+            {line.status === "connected" && (
+              <p className="text-xs text-zinc-600 mt-0.5">
+                {line.last_message_at
+                  ? `Último msg ${timeAgo(line.last_message_at)}`
+                  : line.last_ping_at
+                    ? `Ping ${timeAgo(line.last_ping_at)}`
+                    : null}
+              </p>
+            )}
           </div>
 
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             line.status === "connected"
               ? "bg-emerald-500/15 text-emerald-400"
-              : "bg-zinc-800 text-zinc-500"
+              : line.status === "connecting" || line.status === "qr_pending" || line.status === "waiting_qr"
+                ? "bg-yellow-500/15 text-yellow-400"
+                : "bg-zinc-800 text-zinc-500"
           }`}>
-            {line.status === "connected" ? "Conectado" : "Desconectado"}
+            {line.status === "connected"
+              ? "Conectado"
+              : line.status === "connecting"
+                ? "Conectando..."
+                : line.status === "qr_pending" || line.status === "waiting_qr"
+                  ? "Esperando QR"
+                  : "Desconectado"}
           </span>
 
           {line.status !== "connected" && (

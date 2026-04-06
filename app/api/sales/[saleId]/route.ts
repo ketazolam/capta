@@ -81,8 +81,12 @@ export async function PATCH(
       const pixelId = proj?.meta_pixel_id
       const accessToken = proj?.meta_access_token
 
-      // Atomic CAPI guard: only send if not already sent (prevents race condition)
-      if (pixelId && accessToken && purchaseEnabled && !saleRecord?.meta_event_sent) {
+      // Read the updated amount from DB (admin may have passed a corrected amount)
+      const updatedAmount = amount !== undefined ? Number(amount) : Number(saleRecord?.amount ?? 0)
+
+      // Atomic CAPI guard: only send if not already sent AND amount > 0
+      // $0 events pollute Meta data and waste API quota — skip them
+      if (pixelId && accessToken && purchaseEnabled && !saleRecord?.meta_event_sent && updatedAmount > 0) {
         const { data: claimed } = await supabase
           .from("sales")
           .update({ meta_event_sent: true })
@@ -94,8 +98,8 @@ export async function PATCH(
         if (claimed) {
           const ip = saleRecord?.visitor_ip || req.headers.get("x-forwarded-for")?.split(",")[0] || ""
           const userAgent = saleRecord?.visitor_ua || req.headers.get("user-agent") || ""
-          // Use DB amount as authoritative source — never trust request body for CAPI value
-          const capiAmount = Number(saleRecord?.amount ?? 0)
+          // Use updated amount (admin may have corrected it via analyze+confirm flow)
+          const capiAmount = updatedAmount
           const pageSlug = (saleRecord as any)?.pages?.slug ?? null
 
           // Get contact name for fn (improves EMQ)
