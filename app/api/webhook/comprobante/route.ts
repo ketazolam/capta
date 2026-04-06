@@ -236,6 +236,9 @@ export async function POST(req: NextRequest) {
     capiSent = true
   } catch (err) {
     console.error("[webhook/comprobante] CAPI error:", err)
+    await notifyAdmin({
+      message: `🚨 <b>CAPI FALLÓ</b>\n📱 ${phone || "?"}\n💰 $${extracted.amount?.toLocaleString("es-AR") || "?"}\n❌ ${(err as Error).message}\n⚠️ Venta confirmada pero NO enviada a Meta.`,
+    })
   }
 
   await supabase

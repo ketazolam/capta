@@ -106,6 +106,9 @@ export default async function AnalyticsPage({
 
   const confirmedSalesCount = sales?.length ?? 0
   const capiSentCount = sales?.filter((s) => s.meta_event_sent === true).length ?? 0
+  const conversionRate = counts.conversation_start > 0
+    ? Math.round((confirmedSalesCount / counts.conversation_start) * 100)
+    : null
 
   // Top campaigns by ref_code
   let topRefsQ = supabase
@@ -227,13 +230,22 @@ export default async function AnalyticsPage({
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <p className="text-zinc-500 text-sm mb-1">Facturación confirmada</p>
               <p className="text-3xl font-bold text-emerald-400">
                 ${totalRevenue.toLocaleString("es-AR")}
               </p>
               <p className="text-xs text-zinc-600 mt-1">{confirmedSalesCount} ventas confirmadas</p>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <p className="text-zinc-500 text-sm mb-1">Tasa de conversi&oacute;n</p>
+              <p className="text-3xl font-bold text-emerald-400">
+                {conversionRate !== null ? `${conversionRate}%` : "\u2014"}
+              </p>
+              <p className="text-xs text-zinc-600 mt-1">
+                {confirmedSalesCount} ventas / {counts.conversation_start} chats
+              </p>
             </div>
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <p className="text-zinc-500 text-sm mb-1">Meta CAPI</p>

@@ -86,7 +86,7 @@ Si NO es un comprobante bancario: {"amount":null,"reference":null,"bank":null,"d
         ],
       },
     ],
-  })
+  }, { timeout: 25000 })
 
   const rawText = message.content[0].type === "text" ? message.content[0].text : ""
   const jsonMatch = rawText.match(/\{[\s\S]*\}/)
