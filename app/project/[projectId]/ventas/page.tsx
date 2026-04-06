@@ -10,8 +10,15 @@ const PAGE_SIZE = 25
 function getDateRange(range: string): Date | null {
   const now = new Date()
   switch (range) {
-    case "today": {
-      const d = new Date(now); d.setUTCHours(0, 0, 0, 0); return d
+    case "today": { // Argentina is UTC-3, midnight AR = 03:00 UTC
+      const d = new Date(now)
+      if (d.getUTCHours() >= 3) {
+        d.setUTCHours(3, 0, 0, 0)
+      } else {
+        d.setUTCDate(d.getUTCDate() - 1)
+        d.setUTCHours(3, 0, 0, 0)
+      }
+      return d
     }
     case "7d":  return new Date(now.getTime() - 7  * 86400000)
     case "30d": return new Date(now.getTime() - 30 * 86400000)
@@ -64,8 +71,9 @@ export default async function VentasPage({
     dataQ = dataQ.gte("created_at", since.toISOString())
   }
   if (q) {
-    dataQ = dataQ.ilike("phone", `%${q}%`)
-    countQ = countQ.ilike("phone", `%${q}%`)
+    const likeQ = `%${q}%`
+    dataQ = dataQ.or(`phone.ilike.${likeQ},reference.ilike.${likeQ}`)
+    countQ = countQ.or(`phone.ilike.${likeQ},reference.ilike.${likeQ}`)
   }
 
   const [{ count }, { data: sales }] = await Promise.all([countQ, dataQ])
@@ -132,7 +140,7 @@ export default async function VentasPage({
             type="text"
             name="q"
             defaultValue={q}
-            placeholder="Buscar teléfono..."
+            placeholder="Buscar teléfono o referencia..."
             className="px-3 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 w-44"
           />
         </form>

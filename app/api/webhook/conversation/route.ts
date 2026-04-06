@@ -60,14 +60,30 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  await supabase.from("events").insert({
-    project_id,
-    page_id,
-    line_id: line_id || null,
-    event_type: "conversation_start",
-    session_id,
-    phone,
-  })
+  // Dedup: skip duplicate conversation_start within 24h for the same phone+project
+  // Prevents inflated "Conversaciones" count when the Baileys process restarts
+  // (recentContacts map resets on deploy → all active leads re-trigger conversation_start)
+  const twentyFourHAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { data: existingConv } = await supabase
+    .from("events")
+    .select("id")
+    .eq("project_id", project_id)
+    .eq("phone", phone)
+    .eq("event_type", "conversation_start")
+    .gte("created_at", twentyFourHAgo)
+    .limit(1)
+    .single()
+
+  if (!existingConv) {
+    await supabase.from("events").insert({
+      project_id,
+      page_id,
+      line_id: line_id || null,
+      event_type: "conversation_start",
+      session_id,
+      phone,
+    })
+  }
 
   await supabase.from("contacts").upsert(
     {

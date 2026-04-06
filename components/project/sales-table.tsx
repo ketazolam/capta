@@ -78,12 +78,18 @@ export default function SalesTable({ sales, projectId, hasRefCode }: Props) {
                   )}
                   <td className="px-4 py-3">
                     {sale.image_url ? (
-                      <img
-                        src={sale.image_url}
-                        alt="comprobante"
-                        className="max-w-[40px] max-h-[40px] object-contain rounded border border-zinc-700"
+                      <a
+                        href={sale.image_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                      />
+                      >
+                        <img
+                          src={sale.image_url}
+                          alt="comprobante"
+                          className="max-w-[40px] max-h-[40px] object-contain rounded border border-zinc-700 hover:border-zinc-500 transition-colors"
+                        />
+                      </a>
                     ) : "—"}
                   </td>
                   <td className="px-4 py-3 text-zinc-500 text-xs">

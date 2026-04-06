@@ -9,9 +9,14 @@ function getDateRange(range: string): Date {
     case "15d": return new Date(now.getTime() - 15 * 86400000)
     case "30d": return new Date(now.getTime() - 30 * 86400000)
     case "90d": return new Date(now.getTime() - 90 * 86400000)
-    default: { // "today"
+    default: { // "today" — Argentina is UTC-3, midnight AR = 03:00 UTC
       const start = new Date(now)
-      start.setUTCHours(0, 0, 0, 0)
+      if (start.getUTCHours() >= 3) {
+        start.setUTCHours(3, 0, 0, 0)
+      } else {
+        start.setUTCDate(start.getUTCDate() - 1)
+        start.setUTCHours(3, 0, 0, 0)
+      }
       return start
     }
   }
