@@ -171,7 +171,7 @@ export async function PATCH(
           await supabase.rpc("increment_contact_purchase", {
             p_project_id: project_id,
             p_phone: phone,
-            p_amount: saleRecord?.amount || 0,
+            p_amount: updatedAmount,
           })
         }
       }
