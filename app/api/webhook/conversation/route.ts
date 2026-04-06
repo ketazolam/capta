@@ -8,12 +8,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
-  if (isRateLimited(ip, 30, 60_000)) {
+  // Parse body first — use line_id as rate limit key (Railway has fixed outbound IP)
+  const { project_id, phone, line_id, visit_code } = await req.json()
+
+  const rateLimitKey = line_id || req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
+  if (isRateLimited(rateLimitKey, 30, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
-
-  const { project_id, phone, line_id, visit_code } = await req.json()
 
   if (!project_id || !phone) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })

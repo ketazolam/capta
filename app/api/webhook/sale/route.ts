@@ -10,13 +10,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // Rate limit: 30 req/min per IP even with valid secret
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
-  if (isRateLimited(ip, 30, 60_000)) {
+  // Parse body first — use projectId as rate limit key (Railway has fixed outbound IP)
+  const { saleId, projectId, amount, phone, pageId } = await req.json()
+
+  const rateLimitKey = projectId || req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
+  if (isRateLimited(rateLimitKey, 30, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }
-
-  const { saleId, projectId, amount, phone, pageId } = await req.json()
 
   if (!saleId || !projectId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 })

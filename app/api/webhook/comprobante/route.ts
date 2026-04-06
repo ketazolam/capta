@@ -11,13 +11,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
-  if (isRateLimited(ip, 30, 60_000)) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
-  }
-
+  // Parse body first so we can use line_id as rate limit key
+  // (Railway has a fixed outbound IP — per-IP rate limit blocks all lines at once)
   const body = await req.json()
   const { project_id, phone, image_url, line_id, auto_confirm = true } = body
+
+  const rateLimitKey = line_id || req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
+  if (isRateLimited(rateLimitKey, 20, 60_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+  }
 
   if (!project_id || !image_url) {
     return NextResponse.json({ error: "project_id and image_url required" }, { status: 400 })
