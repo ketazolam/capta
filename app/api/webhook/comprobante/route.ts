@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   // Parse body first so we can use line_id as rate limit key
   // (Railway has a fixed outbound IP — per-IP rate limit blocks all lines at once)
   const body = await req.json()
-  const { project_id, phone, image_url, line_id, auto_confirm = true } = body
+  const { project_id, phone, image_url, line_id } = body
 
   const rateLimitKey = line_id || req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
   if (isRateLimited(rateLimitKey, 20, 60_000)) {
@@ -196,34 +196,7 @@ export async function POST(req: NextRequest) {
 
   const saleId = sale.id
 
-  // Notify admin via Telegram
-  {
-    const amount = extracted.amount ? `$${extracted.amount.toLocaleString("es-AR")}` : "monto no detectado"
-    const confidence = extracted.confidence === "high" ? "✅" : extracted.confidence === "medium" ? "⚠️" : "❓"
-    const { data: projectForNotif } = await supabase
-      .from("projects")
-      .select("name")
-      .eq("id", project_id)
-      .single()
-    const projectName = projectForNotif?.name ? ` — <b>${projectForNotif.name}</b>` : ""
-    await notifyAdmin({
-      message: `${confidence} <b>Nuevo comprobante${projectName}</b>\n📱 ${phone || "desconocido"}\nMonto: ${amount}\nVer en Capta: ${process.env.NEXT_PUBLIC_APP_URL}/project/${project_id}/ventas`,
-    })
-  }
-
-  // 3. Auto-confirm if confidence is high AND amount is valid
-  const shouldConfirm = auto_confirm && extracted.confidence === "high" && extracted.amount && extracted.amount > 0
-
-  if (!shouldConfirm) {
-    return NextResponse.json({
-      ok: true,
-      sale_id: saleId,
-      status: "pending",
-      extracted,
-    })
-  }
-
-  // 4. Get Meta config for the project
+  // 3. Fetch project config (name + Meta) in a single query
   let metaPixelId: string | null = null
   let metaAccessToken: string | null = null
   let projectName = ""
@@ -242,6 +215,16 @@ export async function POST(req: NextRequest) {
     if (project.attribution_config?.meta) {
       purchaseEnabled = project.attribution_config.meta.purchase !== false
     }
+  }
+
+  // Notify admin: new comprobante received
+  {
+    const amountStr = extracted.amount ? `$${extracted.amount.toLocaleString("es-AR")}` : "monto no detectado"
+    const confidenceIcon = extracted.confidence === "high" ? "✅" : extracted.confidence === "medium" ? "⚠️" : "❓"
+    const projectLabel = projectName ? ` — <b>${projectName}</b>` : ""
+    await notifyAdmin({
+      message: `${confidenceIcon} <b>Nuevo comprobante${projectLabel}</b>\n📱 ${phone || "desconocido"}\nMonto: ${amountStr}\nVer en Capta: ${process.env.NEXT_PUBLIC_APP_URL}/project/${project_id}/ventas`,
+    })
   }
 
   if (!metaPixelId || !metaAccessToken) {
