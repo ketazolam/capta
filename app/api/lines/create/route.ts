@@ -38,6 +38,7 @@ export async function POST(req: Request) {
     await fetch(`${baileysUrl}/lines/${line.id}/start`, {
       method: "POST",
       headers: process.env.INTERNAL_SECRET ? { "x-internal-secret": process.env.INTERNAL_SECRET } : {},
+      signal: AbortSignal.timeout(8000),
     }).catch(() => {})
   }
 

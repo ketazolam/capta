@@ -12,7 +12,8 @@ export async function notifyAdmin(opts: {
       body: JSON.stringify({ chat_id: chatId, text: opts.message, parse_mode: "HTML" }),
       signal: AbortSignal.timeout(5000),
     })
-  } catch {
+  } catch (err) {
+    console.error("[notify-admin] Telegram failed:", (err as Error).message)
     // Non-fatal — never throw
   }
 }

@@ -47,7 +47,13 @@ export async function GET(
     if (days !== null) {
       const since = new Date()
       if (days === 0) {
-        since.setUTCHours(0, 0, 0, 0)
+        // Argentina is UTC-3 — midnight AR = 03:00 UTC
+        if (since.getUTCHours() >= 3) {
+          since.setUTCHours(3, 0, 0, 0)
+        } else {
+          since.setUTCDate(since.getUTCDate() - 1)
+          since.setUTCHours(3, 0, 0, 0)
+        }
       } else {
         since.setTime(since.getTime() - days * 86400000)
       }

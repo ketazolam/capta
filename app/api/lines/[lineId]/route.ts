@@ -27,7 +27,7 @@ export async function DELETE(
   const baileysUrl = process.env.BAILEYS_URL
   if (baileysUrl) {
     try {
-      await fetch(`${baileysUrl}/lines/${lineId}`, { method: "DELETE" })
+      await fetch(`${baileysUrl}/lines/${lineId}`, { method: "DELETE", signal: AbortSignal.timeout(8000) })
     } catch {
       // Non-fatal — still proceed with DB deletion
     }

@@ -17,6 +17,7 @@ export async function GET(
   try {
     const res = await fetch(`${baileysUrl}/lines/${lineId}/status`, {
       headers: process.env.INTERNAL_SECRET ? { "x-internal-secret": process.env.INTERNAL_SECRET } : {},
+      signal: AbortSignal.timeout(8000),
     })
     const json = await res.json()
     return NextResponse.json(json, { status: res.status })

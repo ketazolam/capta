@@ -18,6 +18,7 @@ export async function POST(
     const res = await fetch(`${baileysUrl}/lines/${lineId}/start`, {
       method: "POST",
       headers: process.env.INTERNAL_SECRET ? { "x-internal-secret": process.env.INTERNAL_SECRET } : {},
+      signal: AbortSignal.timeout(8000),
     })
     const json = await res.json()
     return NextResponse.json(json, { status: res.status })
