@@ -15,7 +15,7 @@ export async function GET(
     .from("contacts")
     .select("*")
     .eq("id", contactId)
-    .single()
+    .maybeSingle()
 
   if (error || !contact) return NextResponse.json({ error: "Not found" }, { status: 404 })
 

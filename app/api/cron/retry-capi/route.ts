@@ -39,7 +39,7 @@ export async function GET(req: Request) {
       .from("projects")
       .select("meta_pixel_id, meta_access_token, name, attribution_config")
       .eq("id", sale.project_id)
-      .single()
+      .maybeSingle()
 
     const purchaseEnabled = proj?.attribution_config?.meta?.purchase !== false
     let pixelId = proj?.meta_pixel_id
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
         .from("pages")
         .select("meta_pixel_id, meta_access_token")
         .eq("id", sale.page_id)
-        .single()
+        .maybeSingle()
       if (page?.meta_pixel_id && page?.meta_access_token) {
         pixelId = page.meta_pixel_id
         accessToken = page.meta_access_token
@@ -71,7 +71,7 @@ export async function GET(req: Request) {
       .eq("id", sale.id)
       .or("meta_event_sent.is.null,meta_event_sent.eq.false")
       .select("id")
-      .single()
+      .maybeSingle()
 
     if (!claimed) continue // Another instance already claimed it
 
@@ -83,7 +83,7 @@ export async function GET(req: Request) {
         .select("name")
         .eq("project_id", sale.project_id)
         .eq("phone", sale.phone)
-        .single()
+        .maybeSingle()
       contactName = contact?.name?.split(" ")[0] || undefined
     }
 
@@ -93,7 +93,7 @@ export async function GET(req: Request) {
         .from("pages")
         .select("slug")
         .eq("id", sale.page_id)
-        .single()
+        .maybeSingle()
       pageSlug = page?.slug || undefined
     }
 

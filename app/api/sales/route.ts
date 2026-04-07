@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         .select("id")
         .eq("project_id", project_id)
         .eq("phone", phone)
-        .single()
+        .maybeSingle()
       contact_id = contact?.id ?? null
     }
 

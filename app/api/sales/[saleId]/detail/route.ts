@@ -15,7 +15,7 @@ export async function GET(
     .from("sales")
     .select("id, amount, status, image_url, raw_text, reference, reject_reason, ref_code, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, page_id, phone, project_id, created_at, contacts(id, name, phone, total_purchases, purchase_count)")
     .eq("id", saleId)
-    .single()
+    .maybeSingle()
 
   if (error || !sale) return NextResponse.json({ error: "Not found" }, { status: 404 })
 

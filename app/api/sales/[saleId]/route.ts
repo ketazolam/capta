@@ -31,7 +31,7 @@ export async function PATCH(
       .from("sales")
       .select("page_id, amount, status, phone, project_id, meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, ref_code, pages:page_id(slug), projects(org_id, meta_pixel_id, meta_access_token, name, attribution_config)")
       .eq("id", saleId)
-      .single()
+      .maybeSingle()
 
     if (!saleRecord) {
       return NextResponse.json({ error: "Sale not found" }, { status: 404 })
@@ -46,7 +46,7 @@ export async function PATCH(
         .select("id")
         .eq("user_id", user.id)
         .eq("org_id", saleOrgId)
-        .single()
+        .maybeSingle()
       if (!membership) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }
@@ -93,7 +93,7 @@ export async function PATCH(
           .eq("id", saleId)
           .or("meta_event_sent.is.null,meta_event_sent.eq.false")
           .select("id")
-          .single()
+          .maybeSingle()
 
         if (claimed) {
           const ip = saleRecord?.visitor_ip || req.headers.get("x-forwarded-for")?.split(",")[0] || ""
@@ -110,7 +110,7 @@ export async function PATCH(
               .select("name")
               .eq("project_id", project_id)
               .eq("phone", phone)
-              .single()
+              .maybeSingle()
             contactName = contact?.name?.split(" ")[0] || undefined
           }
 
@@ -197,7 +197,7 @@ export async function PATCH(
           .select("total_purchases, purchase_count")
           .eq("project_id", rejProjectId)
           .eq("phone", rejPhone)
-          .single()
+          .maybeSingle()
         if (contact) {
           await supabase
             .from("contacts")
@@ -235,7 +235,7 @@ export async function DELETE(
     .from("sales")
     .select("status, phone, project_id, amount, projects(org_id)")
     .eq("id", saleId)
-    .single()
+    .maybeSingle()
 
   if (!saleRecord) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
@@ -248,7 +248,7 @@ export async function DELETE(
       .select("id")
       .eq("user_id", user.id)
       .eq("org_id", saleOrgId)
-      .single()
+      .maybeSingle()
     if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
@@ -275,7 +275,7 @@ export async function DELETE(
         .select("total_purchases, purchase_count")
         .eq("project_id", rejProjectId)
         .eq("phone", rejPhone)
-        .single()
+        .maybeSingle()
       if (contact) {
         await supabase
           .from("contacts")

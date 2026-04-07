@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         .from("pages")
         .select("id, project_id")
         .eq("tracking_id", tracking_id)
-        .single()
+        .maybeSingle()
       if (pageRow) {
         project_id = pageRow.project_id
         page_id = pageRow.id
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         .from("pages")
         .select("meta_pixel_id, meta_access_token")
         .eq("id", page_id)
-        .single()
+        .maybeSingle()
       pixelId = page?.meta_pixel_id ?? null
       accessToken = page?.meta_access_token ?? null
     }
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
           .from("projects")
           .select("meta_pixel_id, meta_access_token, attribution_config")
           .eq("id", project_id)
-          .single()
+          .maybeSingle()
         if (proj?.meta_pixel_id && proj?.meta_access_token) {
           pixelId = proj.meta_pixel_id
           accessToken = proj.meta_access_token
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
           .from("projects")
           .select("attribution_config")
           .eq("id", project_id)
-          .single()
+          .maybeSingle()
         if (proj?.attribution_config?.meta) {
           metaEnabled = proj.attribution_config.meta[event_type] !== false
         }

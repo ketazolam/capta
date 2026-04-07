@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     .from("projects")
     .select("id, org_id")
     .eq("id", projectId)
-    .single()
+    .maybeSingle()
 
   if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 })
 
