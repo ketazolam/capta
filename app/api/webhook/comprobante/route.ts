@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     .eq("image_url", image_url)
     .order("created_at", { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
   if (existingSale) {
     console.warn("[webhook/comprobante] Duplicate image_url detected, skipping:", existingSale.id)
     return NextResponse.json({ ok: true, sale_id: existingSale.id, status: existingSale.status, duplicate: true })
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         .eq("phone", phone)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       if (convEvent?.session_id) {
         const { data: exactClick } = await supabase
           .from("events")
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
           .eq("session_id", convEvent.session_id)
           .eq("event_type", "button_click")
           .limit(1)
-          .single()
+          .maybeSingle()
         if (exactClick) clickEvent = exactClick as Record<string, unknown>
       }
     }
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         .gte("created_at", fortyEightHAgo)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       if (recentEvent) clickEvent = recentEvent as Record<string, unknown>
     }
 
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
       .eq("status", "pending")
       .gte("created_at", thirtyMinAgo)
       .limit(1)
-      .single()
+      .maybeSingle()
     if (recentSale) {
       console.warn("[webhook/comprobante] Duplicate phone+amount+30min detected:", recentSale.id)
       return NextResponse.json({ ok: true, sale_id: recentSale.id, status: recentSale.status, duplicate: true, reason: "same_phone_amount_30min" })
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       .select("id, name")
       .eq("project_id", project_id)
       .eq("phone", phone)
-      .single()
+      .maybeSingle()
     contact_id = contact?.id ?? null
     contact_name = contact?.name ?? null
   }
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
     .from("projects")
     .select("meta_pixel_id, meta_access_token, name, attribution_config")
     .eq("id", project_id)
-    .single()
+    .maybeSingle()
 
   if (project) {
     metaPixelId = project.meta_pixel_id
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
       })
       // Link sale to contact if it wasn't linked at insert time (contact didn't exist yet)
       if (!contact_id) {
-        const { data: newContact } = await supabase.from("contacts").select("id").eq("project_id", project_id).eq("phone", phone).single()
+        const { data: newContact } = await supabase.from("contacts").select("id").eq("project_id", project_id).eq("phone", phone).maybeSingle()
         if (newContact?.id) await supabase.from("sales").update({ contact_id: newContact.id }).eq("id", saleId)
       }
     }
@@ -312,7 +312,7 @@ export async function POST(req: NextRequest) {
     })
     // Link sale to contact if it wasn't linked at insert time (contact didn't exist yet)
     if (!contact_id) {
-      const { data: newContact } = await supabase.from("contacts").select("id").eq("project_id", project_id).eq("phone", phone).single()
+      const { data: newContact } = await supabase.from("contacts").select("id").eq("project_id", project_id).eq("phone", phone).maybeSingle()
       if (newContact?.id) await supabase.from("sales").update({ contact_id: newContact.id }).eq("id", saleId)
     }
   }

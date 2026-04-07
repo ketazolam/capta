@@ -39,7 +39,7 @@ export async function analyzeComprobante(imageUrl: string): Promise<ComprobanteD
   if (!isAllowedImageUrl(imageUrl)) {
     throw new Error(`Image URL not allowed: ${imageUrl}`)
   }
-  const imgRes = await fetch(imageUrl)
+  const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(15000) })
   if (!imgRes.ok) throw new Error(`Image fetch failed: ${imgRes.status}`)
 
   const contentType = imgRes.headers.get("content-type") || "image/jpeg"

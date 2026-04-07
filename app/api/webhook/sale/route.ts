@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     .from("projects")
     .select("meta_pixel_id, meta_access_token, name, attribution_config")
     .eq("id", projectId)
-    .single()
+    .maybeSingle()
 
   if (project) {
     metaPixelId = project.meta_pixel_id
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     .from("sales")
     .select("meta_event_sent, visitor_fbp, visitor_fbc, visitor_ip, visitor_ua, visitor_session_id, ref_code, page_id")
     .eq("id", saleId)
-    .single()
+    .maybeSingle()
 
   if (saleRecord?.meta_event_sent === true) {
     // Already sent — just confirm without re-firing CAPI
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       .select("name")
       .eq("project_id", projectId)
       .eq("phone", phone)
-      .single()
+      .maybeSingle()
     contactName = contact?.name || undefined
   }
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       .from("pages")
       .select("slug")
       .eq("id", resolvedPageId)
-      .single()
+      .maybeSingle()
     pageSlug = page?.slug || undefined
   }
 

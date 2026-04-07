@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         .ilike("session_id", `${visit_code}%`)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       if (exactClick) {
         page_id = exactClick.page_id
         session_id = exactClick.session_id
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         .gte("created_at", fortyEightHAgo)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       page_id = recentClick?.page_id ?? null
       session_id = recentClick?.session_id ?? null
     }
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     .eq("event_type", "conversation_start")
     .gte("created_at", twentyFourHAgo)
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (!existingConv) {
     await supabase.from("events").insert({
