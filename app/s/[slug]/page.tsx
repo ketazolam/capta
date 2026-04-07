@@ -139,7 +139,7 @@ export default async function SmartLinkPage({
       .eq("id", preferredLineId)
       .eq("is_active", true)
       .eq("status", "connected")
-      .single()
+      .maybeSingle()
     targetLine = preferred ?? null
   }
 
@@ -185,7 +185,7 @@ export default async function SmartLinkPage({
       .from("projects")
       .select("meta_pixel_id, meta_access_token, attribution_config")
       .eq("id", page.project_id)
-      .single()
+      .maybeSingle()
     if (proj?.meta_pixel_id && proj?.meta_access_token) {
       pixelId = proj.meta_pixel_id
       accessToken = proj.meta_access_token
@@ -199,7 +199,7 @@ export default async function SmartLinkPage({
       .from("projects")
       .select("attribution_config")
       .eq("id", page.project_id)
-      .single()
+      .maybeSingle()
     if (proj?.attribution_config?.meta) {
       pageViewEnabled = proj.attribution_config.meta.page_view !== false
     }

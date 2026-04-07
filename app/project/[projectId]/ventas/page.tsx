@@ -72,7 +72,9 @@ export default async function VentasPage({
     dataQ = dataQ.gte("created_at", since.toISOString())
   }
   if (q) {
-    const likeQ = `%${q}%`
+    // Strip chars that break PostgREST's or() filter parser (commas, parens, dots)
+    const safeQ = q.replace(/[,().]/g, "")
+    const likeQ = `%${safeQ}%`
     dataQ = dataQ.or(`phone.ilike.${likeQ},reference.ilike.${likeQ}`)
     countQ = countQ.or(`phone.ilike.${likeQ},reference.ilike.${likeQ}`)
   }

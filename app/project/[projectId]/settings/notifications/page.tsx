@@ -14,7 +14,7 @@ export default async function SettingsNotificationsPage({
     .from("projects")
     .select("notification_phone")
     .eq("id", projectId)
-    .single()
+    .maybeSingle()
 
   return (
     <div className="p-8 max-w-2xl">

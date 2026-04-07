@@ -18,12 +18,12 @@ export default async function ProjectLayout({
     .from("projects")
     .select("id, name, org_id")
     .eq("id", projectId)
-    .single()
+    .maybeSingle()
 
   if (!project) redirect("/dashboard")
 
   const [{ data: creditsRow }, { data: allProjects }] = await Promise.all([
-    supabase.from("credits").select("balance").eq("org_id", project.org_id).single(),
+    supabase.from("credits").select("balance").eq("org_id", project.org_id).maybeSingle(),
     supabase.from("projects").select("id, name").eq("org_id", project.org_id).order("created_at", { ascending: false }),
   ])
 

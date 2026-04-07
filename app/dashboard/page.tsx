@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     .from("credits")
     .select("balance")
     .eq("org_id", orgId)
-    .single()
+    .maybeSingle()
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">

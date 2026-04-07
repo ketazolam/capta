@@ -14,7 +14,7 @@ export default async function SettingsIntegrationsPage({
     .from("projects")
     .select("meta_pixel_id, meta_access_token")
     .eq("id", projectId)
-    .single()
+    .maybeSingle()
 
   const { data: lines } = await supabase
     .from("lines")

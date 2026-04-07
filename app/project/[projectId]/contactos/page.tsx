@@ -37,7 +37,9 @@ export default async function ContactosPage({
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
   if (q) {
-    const likeQ = `%${q}%`
+    // Strip chars that break PostgREST's or() filter parser (commas, parens, dots)
+    const safeQ = q.replace(/[,().]/g, "")
+    const likeQ = `%${safeQ}%`
     countQ = countQ.or(`phone.ilike.${likeQ},name.ilike.${likeQ}`)
     dataQ = dataQ.or(`phone.ilike.${likeQ},name.ilike.${likeQ}`)
   }

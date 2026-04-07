@@ -51,7 +51,7 @@ export default function PageEditorPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.from("pages").select("*").eq("id", pageId).single()
+    supabase.from("pages").select("*").eq("id", pageId).maybeSingle()
       .then(({ data }) => { if (data) setPage(data as Page) })
     supabase.from("lines").select("id, name, phone_number, status, is_active")
       .eq("project_id", projectId)

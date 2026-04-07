@@ -22,14 +22,14 @@ export default async function SettingsGeneralPage({
     .from("projects")
     .select("id, name, org_id, meta_pixel_id, meta_access_token, attribution_config")
     .eq("id", projectId)
-    .single()
+    .maybeSingle()
 
   if (projectError && projectError.code === "42703") {
     const { data: fallback } = await supabase
       .from("projects")
       .select("id, name, org_id")
       .eq("id", projectId)
-      .single()
+      .maybeSingle()
     project = fallback ? { ...fallback, meta_pixel_id: null, meta_access_token: null, attribution_config: null } : null
   } else {
     project = projectData
